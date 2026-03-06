@@ -4,7 +4,6 @@
 
 - **[Demo Walkthrough Video→](https://dandan8888.github.io/Fraud_Risk_Intelligence_Portfolio/Fraud-detection/fraud-detection-dashboard.html)** 
 - **[Live Dashboard →](https://dandan8888.github.io/Fraud_Risk_Intelligence_Portfolio/Fraud-detection/fraud-detection-dashboard.html)** 
-- **[Jupyter Notebook →](https://github.com/dandan8888/Fraud_Risk_Intelligence_Portfolio/blob/main/Fraud-detection/fraud_detection_notebook.ipynb)** 
 
 ---
 

@@ -2,7 +2,7 @@
 
 > AI-powered fraud detection agent combining behavioral science with LLM reasoning.
 
-**[Live Demo →](https://dandan8888.github.io/Fraud_Risk_Intelligence_Portfolio/Fraud-detection/fraud-analytics-dashboard.html)**
+**[Live Demo →](https://dandan8888.github.io/Fraud_Risk_Intelligence_Portfolio/Fraud-detection/fraud-detection-dashboard.html)**
 
 ---
 

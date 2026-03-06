@@ -7,22 +7,22 @@
 
 ## Overview
 
-This portfolio demonstrates applied fraud and risk intelligence work at the intersection of domain expertise and AI/ML — combining 3+ years of operational experience at a Tel Aviv-based risk intelligence firm specializing in financial crime and threat detection, with an M.Sc. in Machine Learning from Reichman University (2025).
+This portfolio demonstrates applied fraud and risk intelligence work at the intersection of domain expertise and AI/ML — combining operational experience at risk intelligence firm specializing in financial crime and threat detection, with an M.Sc. in Machine Learning.
 
 Two independent projects cover different dimensions of modern fraud defense:
 
 | Project | Focus | Audience |
 |---------|-------|----------|
-| [Scam Defense Copilot](#scam-defense-copilot) | Social engineering · AI-powered detection · Behavioral psychology | Fraud Defense · Threat Intelligence · AI Product roles |
-| [Fintech Risk Analytics](#fintech-risk-analytics) | Transaction fraud · Merchant risk · AML · Credit fraud | Fintech Risk Analyst · Compliance · AML roles |
+| [Fraud Detection](#Fraud-detection) | social engineering · AI-powered detection · Behavioral psychology | Fraud Defense · Threat Intelligence · AI Product roles |
+| [Fintech Risk Analytics](#Fintech-risk) | Transaction fraud · Merchant risk · AML · Credit fraud | Fintech Risk Analyst · Compliance · AML roles |
 
 ---
 
-## Scam Defense Copilot
+## Fraud Detection
 
-**[→ View Project](./scam-defense/)**
+**[→ View Project](./Fraud-detection/)**
 
-An AI-powered scam detection agent that reasons about social engineering attacks using behavioral science frameworks — not just keyword matching.
+An AI-powered fraud detection agent that reasons about social engineering attacks using behavioral science frameworks — not just keyword matching.
 
 **What it does:**
 - Analyzes conversation transcripts and case descriptions
@@ -36,7 +36,7 @@ An AI-powered scam detection agent that reasons about social engineering attacks
 
 ## Fintech Risk Analytics
 
-**[→ View Project](./fintech-risk/)**
+**[→ View Project](./Fintech-risk/)**
 
 A two-part analytics toolkit covering four risk domains common to fintech and banking fraud operations.
 
@@ -56,9 +56,9 @@ A two-part analytics toolkit covering four risk domains common to fintech and ba
 
 ## Background
 
-**Operational experience:** Risk Intelligence Analyst at a Tel Aviv-based risk intelligence firm specializing in financial crime and threat detection (2016–2019). Work included merchant fraud detection, money laundering network analysis, link analysis across global merchant data, and OSINT/WEBINT investigations.
+**Operational experience:** Risk Intelligence Analyst at a Tel Aviv-based risk intelligence firm specializing in financial crime and threat detection. Work included merchant fraud detection, money laundering network analysis, link analysis across global merchant data, and OSINT/WEBINT investigations.
 
-**Academic:** M.Sc. Machine Learning & Data Science, Reichman University (2025, distinction). Thesis: hybrid CNN + Transformer model achieving 30% accuracy improvement over baseline on permuted image classification.
+**Academic:** M.Sc. Machine Learning & Data Science, Reichman University. Thesis: hybrid CNN + Transformer model achieving 30% accuracy improvement over baseline on permuted image classification.
 
 **Languages:** English (professional) · Chinese (native) · Hebrew (conversational)
 

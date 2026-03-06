@@ -13,8 +13,8 @@ Modern scams don't exploit technical vulnerabilities — they exploit **human ps
 This project builds a detection agent that thinks the way a fraud analyst thinks: not just pattern-matching keywords, but reasoning about **manipulation tactics, psychological leverage points, and scam lifecycle phases**.
 
 Built to demonstrate the intersection of:
-- Fraud domain expertise (operational experience at EverCompliant, 2016–2019)
-- Applied AI/ML (M.Sc. Machine Learning, Reichman University, 2025)
+- risk intelligence firm specializing in financial crime and threat detection
+- Applied AI/ML 
 - Behavioral science frameworks
 
 ---
@@ -40,8 +40,10 @@ Each phase includes: attacker psychology, victim psychology, and detectable sign
 
 ### 🧠 Knowledge Base
 The theoretical frameworks underlying the agent's reasoning:
-- Cialdini's 7 Principles of Influence
-- BITE Model of Coercive Control
+- Cialdini's 7 Principles of Influence  
+  (Cialdini, *Influence*, 1984; *Pre-Suasion*, 2016)
+- BITE Model of Coercive Control  
+  (Steven Hassan, *Combating Cult Mind Control*, 1988)
 - Cognitive Hijacking mechanisms
 - Network / link analysis methodology
 - Intervention design principles
@@ -143,7 +145,7 @@ Claude is used here not as a classifier but as a **reasoning agent** — given a
 
 **Dan Fang** — Fraud & Risk Intelligence · M.Sc. Machine Learning
 
-3+ years detecting merchant fraud, money laundering networks, and financial crime at EverCompliant (Tel Aviv). M.Sc. in Machine Learning & Data Science from Reichman University (distinction). Trilingual: English, Chinese, Hebrew.
+experiences in detecting merchant fraud, money laundering networks, and financial crime at risk intelligence firm, M.Sc. in Machine Learning & Data Science. Trilingual: English, Chinese, Hebrew.
 
 Previously: link analysis across global merchant data, behavioral anomaly detection, AML risk assessment, OSINT/WEBINT investigations.
 

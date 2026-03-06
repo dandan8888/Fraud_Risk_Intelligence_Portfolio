@@ -112,6 +112,6 @@ Single-file deployment — no backend, no build step.
 ## About
 
 **Dan Fang** | danfly8888@gmail.com | Ramat Gan, Israel  
-AI-Driven Fraud & Risk Intelligence Specialist
+AI-Driven Fraud & Risk Intelligence Specialist · M.Sc. Machine Learning
 
 [← Back to Portfolio](../README.md)

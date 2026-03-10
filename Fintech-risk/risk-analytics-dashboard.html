@@ -3,1085 +3,2170 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Risk Analytics Dashboard — Dan Fang</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<title>Fraud Detection — Dan Fang</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:       #060810;
-  --s1:       #0c0f1a;
-  --s2:       #111520;
-  --s3:       #161b28;
-  --border:   #1c2235;
-  --border2:  #242b3d;
-  --cyan:     #00d4ff;
-  --cyan-dim: rgba(0,212,255,0.12);
-  --red:      #ff3b5c;
-  --red-dim:  rgba(255,59,92,0.12);
-  --amber:    #ffb020;
-  --amber-dim:rgba(255,176,32,0.12);
-  --green:    #00e676;
-  --green-dim:rgba(0,230,118,0.12);
-  --purple:   #b388ff;
-  --text:     #dde3f0;
-  --muted:    #4a5270;
-  --mono:     'IBM Plex Mono', monospace;
-  --sans:     'IBM Plex Sans', sans-serif;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Scanline overlay */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.03) 2px,
-    rgba(0,0,0,0.03) 4px
-  );
-  pointer-events: none;
-  z-index: 1000;
-}
-
-/* Grid bg */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
-  background-size: 32px 32px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.wrap { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 20px 60px; }
-
-/* ── HEADER ── */
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 0 18px;
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.brand { display: flex; align-items: center; gap: 16px; }
-
-.brand-icon {
-  width: 38px; height: 38px;
-  border: 1px solid var(--cyan);
-  border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  box-shadow: 0 0 12px rgba(0,212,255,0.2);
-}
-
-.brand-text { display: flex; flex-direction: column; gap: 2px; }
-
-.brand-name {
-  font-family: var(--mono);
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: 0.5px;
-}
-
-.brand-sub {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 2px;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.pulse-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-  animation: pulse 2s ease-in-out infinite;
-  display: inline-block;
-  margin-right: 6px;
-}
-
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-/* ── UPLOAD ZONE ── */
-.upload-section {
-  margin: 28px 0;
-}
-
-.upload-label {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--cyan);
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.upload-label::before { content: ''; width: 20px; height: 1px; background: var(--cyan); }
-
-.upload-area {
-  border: 1px dashed var(--border2);
-  border-radius: 8px;
-  padding: 32px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.25s;
-  background: var(--s1);
-  position: relative;
-}
-
-.upload-area:hover, .upload-area.drag-over {
-  border-color: var(--cyan);
-  background: rgba(0,212,255,0.04);
-}
-
-.upload-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.6; }
-
-.upload-text {
-  font-size: 14px;
-  color: var(--text);
-  margin-bottom: 6px;
-}
-
-.upload-sub {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 20px;
-}
-
-.sample-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-
-.sample-btn {
-  padding: 7px 16px;
-  border: 1px solid var(--border2);
-  border-radius: 4px;
-  background: var(--s2);
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.sample-btn:hover { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-dim); }
-
-#fileInput { display: none; }
-
-/* ── ANALYSIS PIPELINE ── */
-.pipeline {
-  display: none;
-}
-
-.pipeline.visible { display: block; }
-
-/* ── STAT CARDS ── */
-.stat-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  background: var(--s2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  opacity: 0;
-  animation: fadeUp 0.4s forwards;
-}
-
-.stat-card:nth-child(1) { animation-delay: 0.05s; }
-.stat-card:nth-child(2) { animation-delay: 0.1s; }
-.stat-card:nth-child(3) { animation-delay: 0.15s; }
-.stat-card:nth-child(4) { animation-delay: 0.2s; }
-.stat-card:nth-child(5) { animation-delay: 0.25s; }
-.stat-card:nth-child(6) { animation-delay: 0.3s; }
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.stat-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--muted);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-family: var(--mono);
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.stat-sub { font-size: 11px; color: var(--muted); }
-
-/* ── SECTION HEADER ── */
-.section-hdr {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--cyan);
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  margin: 24px 0 14px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* ── CHARTS GRID ── */
-.charts-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-@media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
-
-.chart-card {
-  background: var(--s2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  opacity: 0;
-  animation: fadeUp 0.4s forwards;
-}
-
-.chart-card:nth-child(1) { animation-delay: 0.1s; }
-.chart-card:nth-child(2) { animation-delay: 0.15s; }
-.chart-card:nth-child(3) { animation-delay: 0.2s; }
-.chart-card:nth-child(4) { animation-delay: 0.25s; }
-
-.chart-title {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text);
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.chart-title span { color: var(--muted); font-size: 10px; }
-
-.chart-wrap { position: relative; height: 200px; }
-
-/* ── FLAGGED TRANSACTIONS TABLE ── */
-.table-wrap {
-  background: var(--s2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 20px;
-  opacity: 0;
-  animation: fadeUp 0.4s 0.2s forwards;
-}
-
-.table-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-
-thead th {
-  padding: 10px 14px;
-  text-align: left;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 1px;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-
-tbody tr {
-  border-bottom: 1px solid var(--border);
-  transition: background 0.15s;
-}
-
-tbody tr:hover { background: rgba(0,212,255,0.03); }
-tbody tr:last-child { border-bottom: none; }
-
-tbody td {
-  padding: 10px 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.risk-pill {
-  padding: 2px 8px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-.risk-critical { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,59,92,0.3); }
-.risk-high     { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,176,32,0.3); }
-.risk-medium   { background: rgba(0,212,255,0.08); color: var(--cyan); border: 1px solid rgba(0,212,255,0.2); }
-.risk-low      { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
-
-/* ── AI REPORT ── */
-.ai-report {
-  background: var(--s2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  opacity: 0;
-  animation: fadeUp 0.4s 0.3s forwards;
-}
-
-.ai-report-header {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.ai-report-title {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--cyan);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.generating-badge {
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 3px 10px;
-  border-radius: 3px;
-  background: var(--cyan-dim);
-  color: var(--cyan);
-  border: 1px solid rgba(0,212,255,0.2);
-}
-
-.ai-report-body {
-  padding: 20px;
-  font-size: 13px;
-  line-height: 1.8;
-  color: #b0bcd4;
-  min-height: 120px;
-}
-
-.ai-report-body h4 {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--cyan);
-  letter-spacing: 2px;
-  margin: 16px 0 8px;
-}
-
-.ai-report-body h4:first-child { margin-top: 0; }
-
-.ai-report-body strong { color: var(--text); }
-
-.cursor {
-  display: inline-block;
-  width: 8px; height: 14px;
-  background: var(--cyan);
-  animation: blink 0.9s step-end infinite;
-  vertical-align: middle;
-  margin-left: 2px;
-}
-
-@keyframes blink { 50% { opacity: 0; } }
-
-/* ── LOADING STATE ── */
-.loading-bar {
-  height: 2px;
-  background: var(--border);
-  border-radius: 1px;
-  overflow: hidden;
-  margin: 16px 0;
-}
-
-.loading-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--cyan), var(--purple));
-  border-radius: 1px;
-  width: 0%;
-  transition: width 0.3s ease;
-}
-
-.loading-text {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-
-/* ── FOOTER ── */
-footer {
-  margin-top: 48px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-footer a { color: var(--cyan); text-decoration: none; }
-
-/* ── COLUMN MAP ── */
-.col-map {
-  background: var(--s1);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 20px;
-  font-family: var(--mono);
-  font-size: 11px;
-}
-
-.col-map-title { color: var(--amber); font-size: 10px; letter-spacing: 2px; margin-bottom: 10px; }
-.col-map-grid { display: flex; gap: 8px; flex-wrap: wrap; }
-.col-chip {
-  padding: 3px 10px;
-  border-radius: 3px;
-  border: 1px solid var(--border2);
-  color: var(--muted);
-  background: var(--s2);
-}
-.col-chip.mapped { border-color: rgba(0,230,118,0.3); color: var(--green); background: var(--green-dim); }
-.col-chip.key    { border-color: rgba(0,212,255,0.3); color: var(--cyan); background: var(--cyan-dim); }
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #1e2330;
+    --accent: #00e5ff;
+    --accent2: #ff4757;
+    --accent3: #ffd32a;
+    --accent4: #2ed573;
+    --text: #e8eaf0;
+    --muted: #5a6072;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 32px 0 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .logo-block { display: flex; flex-direction: column; gap: 4px; }
+
+  .logo-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .logo-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .logo-title span { color: var(--accent); }
+
+  .header-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  .header-meta a { color: var(--accent); text-decoration: none; }
+  .header-meta a:hover { text-decoration: underline; }
+
+  /* STATUS BAR */
+  .status-bar {
+    display: flex;
+    gap: 24px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+
+  .status-item { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot.green { background: var(--accent4); box-shadow: 0 0 6px var(--accent4); }
+  .dot.blue { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-top: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* PANELS */
+  .panel { display: none; padding-top: 28px; }
+  .panel.active { display: block; }
+
+  /* INTRO SECTION */
+  .intro-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 600px) { .intro-grid { grid-template-columns: 1fr; } }
+
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .info-card h3 {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .info-card p { font-size: 14px; color: #9ca3af; line-height: 1.7; }
+
+  /* PLAYBOOK */
+  .playbook-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .playbook-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+
+  .badge.red { color: var(--accent2); border-color: var(--accent2); background: rgba(255,71,87,0.08); }
+  .badge.yellow { color: var(--accent3); border-color: var(--accent3); background: rgba(255,211,42,0.08); }
+  .badge.green { color: var(--accent4); border-color: var(--accent4); background: rgba(46,213,115,0.08); }
+  .badge.blue { color: var(--accent); border-color: var(--accent); background: rgba(0,229,255,0.08); }
+
+  .scam-type-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .scam-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .scam-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .scam-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.06); }
+
+  .playbook-content { display: none; }
+  .playbook-content.active { display: block; }
+
+  /* PHASE TIMELINE */
+  .phase-timeline { position: relative; }
+
+  .phase-timeline::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+  }
+
+  .phase {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateX(-10px);
+    animation: fadeSlide 0.4s forwards;
+  }
+
+  .phase:nth-child(1) { animation-delay: 0.05s; }
+  .phase:nth-child(2) { animation-delay: 0.1s; }
+  .phase:nth-child(3) { animation-delay: 0.15s; }
+  .phase:nth-child(4) { animation-delay: 0.2s; }
+  .phase:nth-child(5) { animation-delay: 0.25s; }
+  .phase:nth-child(6) { animation-delay: 0.3s; }
+
+  @keyframes fadeSlide {
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .phase-num {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    position: relative;
+    z-index: 1;
+  }
+
+  .phase-body {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .phase-body h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phase-body p { font-size: 13px; color: #9ca3af; line-height: 1.6; margin-bottom: 10px; }
+
+  .signals-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .signal-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.2);
+    color: var(--accent);
+  }
+
+  .signal-tag.danger {
+    background: rgba(255,71,87,0.08);
+    border-color: rgba(255,71,87,0.2);
+    color: var(--accent2);
+  }
+
+  .signal-tag.warn {
+    background: rgba(255,211,42,0.08);
+    border-color: rgba(255,211,42,0.2);
+    color: var(--accent3);
+  }
+
+  /* AGENT PANEL */
+  .agent-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 800px) { .agent-layout { grid-template-columns: 1fr; } }
+
+  .input-section h3 {
+    font-size: 13px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .sample-cases {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .sample-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .sample-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+
+  textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    resize: vertical;
+    min-height: 200px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  .analyze-btn {
+    margin-top: 12px;
+    padding: 12px 28px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .analyze-btn:hover { background: #33ecff; transform: translateY(-1px); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* RESULTS */
+  .result-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .result-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .result-body { padding: 16px; min-height: 300px; }
+
+  .placeholder-text {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  /* RISK METER */
+  .risk-meter {
+    margin-bottom: 16px;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .risk-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .risk-score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .risk-score-num {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .risk-bar-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .risk-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  /* SIGNAL LIST */
+  .signal-list { margin-bottom: 14px; }
+  .signal-list h4 {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .signal-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.5;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+  }
+
+  .signal-item:last-child { border-bottom: none; }
+
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  .signal-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  /* RECOMMENDATION */
+  .recommendation {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #9ca3af;
+  }
+
+  .recommendation strong { color: var(--accent); }
+
+  /* KNOWLEDGE BASE PANEL */
+  .kb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .kb-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    transition: border-color 0.2s;
+    cursor: default;
+  }
+
+  .kb-card:hover { border-color: rgba(0,229,255,0.3); }
+
+  .kb-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .kb-card h3 { font-size: 15px; font-weight: 700; }
+  .kb-icon { font-size: 22px; }
+
+  .kb-card p { font-size: 13px; color: #9ca3af; line-height: 1.6; margin-bottom: 12px; }
+
+  .kb-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .kb-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  /* LOADING */
+  .loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    padding: 20px;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,229,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* STREAMING TEXT */
+  .stream-text { white-space: pre-wrap; font-size: 13px; line-height: 1.8; color: #c8cdd8; }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background: var(--accent);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 16px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  /* FOOTER */
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .highlight { color: var(--accent); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app">
 
-  <!-- HEADER -->
   <header>
-    <div class="brand">
-      <div class="brand-icon">⬡</div>
-      <div class="brand-text">
-        <div class="brand-name">RISK ANALYTICS ENGINE</div>
-        <div class="brand-sub">Risk Intelligence · Dan Fang</div>
-      </div>
+    <div class="logo-block">
+      <div class="logo-tag">// Fraud Intelligence System v1.0</div>
+      <div class="logo-title">Fraud <span>Detection</span></div>
     </div>
-    <div class="header-right">
-      <span><span class="pulse-dot"></span>System Online</span>
-      <span>Claude claude-sonnet-4-20250514</span>
-      <span style="color:var(--cyan)">danfly8888@gmail.com</span>
+    <div class="header-meta">
+      Built by Dan Fang — AI-Driven Fraud &amp; Risk Intelligence Specialist · M.Sc. Machine Learning
     </div>
   </header>
 
-  <!-- UPLOAD -->
-  <div class="upload-section">
-    <div class="upload-label">Data Ingestion</div>
-    <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
-      <div class="upload-icon">⬆</div>
-      <div class="upload-text">Drop a CSV file or click to upload</div>
-      <div class="upload-sub">Supports any transaction dataset — auto-detects columns</div>
-      <div class="sample-btns" onclick="event.stopPropagation()">
-        <span style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:30px">Load sample:</span>
-        <button class="sample-btn" onclick="loadSample('creditcard')">Credit Card Fraud</button>
-        <button class="sample-btn" onclick="loadSample('paysim')">Mobile Payments</button>
-        <button class="sample-btn" onclick="loadSample('merchant')">Merchant Transactions</button>
-      </div>
-    </div>
-    <input type="file" id="fileInput" accept=".csv" onchange="handleFile(this.files[0])">
+  <div class="status-bar">
+    <div class="status-item"><div class="dot green"></div>Agent Online</div>
+    <div class="status-item"><div class="dot blue"></div>Claude claude-sonnet-4-20250514</div>
+    <div class="status-item">Coverage: Romance · Investment · Impersonation · Phishing</div>
+    <div class="status-item">Psychology Framework: Cialdini + BITE Model</div>
   </div>
 
-  <!-- LOADING -->
-  <div id="loadingSection" style="display:none">
-    <div class="loading-text" id="loadingText">Parsing CSV...</div>
-    <div class="loading-bar"><div class="loading-fill" id="loadingFill"></div></div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('agent')">🤖 Detection Agent</div>
+    <div class="tab" onclick="switchTab('playbook')">📖 Scam Playbook</div>
+    <div class="tab" onclick="switchTab('kb')">🧠 Knowledge Base</div>
+    <div class="tab" onclick="switchTab('about')">ℹ️ About This Project</div>
   </div>
 
-  <!-- PIPELINE OUTPUT -->
-  <div class="pipeline" id="pipeline">
+  <!-- AGENT PANEL -->
+  <div id="panel-agent" class="panel active">
+    <div class="agent-layout">
+      <div class="input-section">
+        <h3>// Input — Conversation / Case Description</h3>
+        <div class="sample-cases">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:6px 0;">Load sample:</span>
+          <button class="sample-btn" onclick="loadSample('romance')">Romance Scam</button>
+          <button class="sample-btn" onclick="loadSample('investment')">Pig Butchering</button>
+          <button class="sample-btn" onclick="loadSample('impersonation')">Bank Impersonation</button>
+          <button class="sample-btn" onclick="loadSample('phishing')">Phishing</button>
+        </div>
+        <textarea id="caseInput" placeholder="Paste a conversation transcript, case description, or suspicious message here...
 
-    <!-- COLUMN MAP -->
-    <div class="col-map" id="colMap"></div>
+Example: 'Hi, I matched with someone on Tinder 3 weeks ago. We talk every day. Yesterday they said they have a special crypto investment opportunity and showed me their portfolio making $50k/month...'"></textarea>
+        <button class="analyze-btn" onclick="analyzeCase()" id="analyzeBtn">
+          <span>▶</span> ANALYZE CASE
+        </button>
+      </div>
 
-    <!-- STAT CARDS -->
-    <div class="section-hdr">Portfolio Overview</div>
-    <div class="stat-row" id="statRow"></div>
+      <div>
+        <div class="result-header">
+          <span>◈</span> ANALYSIS OUTPUT
+        </div>
+        <div class="result-panel">
+          <div class="result-body" id="resultBody">
+            <div class="placeholder-text">
+              ◈ Awaiting case input<br><br>
+              Paste a conversation or<br>
+              load a sample case above
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <!-- CHARTS -->
-    <div class="section-hdr">Distribution Analysis</div>
-    <div class="charts-grid" id="chartsGrid">
-      <div class="chart-card">
-        <div class="chart-title">Transaction Amount Distribution <span>log scale</span></div>
-        <div class="chart-wrap"><canvas id="chartAmount"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Fraud Rate by Hour <span>24h pattern</span></div>
-        <div class="chart-wrap"><canvas id="chartHour"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Risk Score Distribution <span>ensemble model</span></div>
-        <div class="chart-wrap"><canvas id="chartScore"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Transaction Volume by Risk Tier <span>count</span></div>
-        <div class="chart-wrap"><canvas id="chartTier"></canvas></div>
+  <!-- PLAYBOOK PANEL -->
+  <div id="panel-playbook" class="panel">
+    <div class="playbook-header">
+      <h2>Scam Playbook Analysis</h2>
+      <span class="badge red">HIGH THREAT</span>
+    </div>
+
+    <p style="font-size:13px;color:#9ca3af;line-height:1.7;margin-bottom:20px;max-width:700px;">
+      Structured behavioral analysis of modern scam typologies. Each playbook deconstructs the attacker's psychological manipulation tactics, phase-by-phase escalation patterns, and detectable risk signals — mapped against Cialdini's influence principles and behavioral science frameworks.
+    </p>
+
+    <div class="scam-type-selector">
+      <button class="scam-btn active" onclick="showPlaybook('romance', this)">Romance / Pig Butchering</button>
+      <button class="scam-btn" onclick="showPlaybook('investment', this)">Investment Fraud</button>
+      <button class="scam-btn" onclick="showPlaybook('impersonation', this)">Authority Impersonation</button>
+    </div>
+
+    <!-- ROMANCE PLAYBOOK -->
+    <div id="playbook-romance" class="playbook-content active">
+      <div class="section-label">Romance Scam · SHA Tǔ Zhū Pán (杀猪盘) — Pig Butchering</div>
+      <div class="phase-timeline">
+        <div class="phase">
+          <div class="phase-num">01</div>
+          <div class="phase-body">
+            <h4>Seeding & First Contact <span class="badge blue">RECRUITMENT</span></h4>
+            <p>Attacker initiates contact via dating apps, social media, or "wrong number" SMS. Profile is meticulously crafted: attractive photos (often stolen), high-status occupation (doctor, finance, engineer), international travel narrative. Initial messages are warm but non-threatening.</p>
+            <div class="signals-row">
+              <span class="signal-tag warn">Profile too perfect</span>
+              <span class="signal-tag warn">Unsolicited contact</span>
+              <span class="signal-tag warn">Fast emotional escalation</span>
+              <span class="signal-tag">Never video calls</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">02</div>
+          <div class="phase-body">
+            <h4>Love Bombing <span class="badge yellow">TRUST BUILDING</span></h4>
+            <p>Rapid emotional bonding through daily contact, affectionate language, deep personal questions. Victim feels uniquely understood. Psychological mechanism: reciprocity + social proof. Duration: 2–8 weeks. Victim is gradually isolated from social support network through subtle criticism of friends/family.</p>
+            <div class="signals-row">
+              <span class="signal-tag warn">Daily contact within days</span>
+              <span class="signal-tag warn">Calls you "soulmate" early</span>
+              <span class="signal-tag warn">Never meets in person</span>
+              <span class="signal-tag">Future faking (plans trips)</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">03</div>
+          <div class="phase-body">
+            <h4>Financial Introduction <span class="badge yellow">GROOMING</span></h4>
+            <p>Introduces crypto investment "casually" — mentions they recently made money, shows screenshots of returns. Frames as sharing a gift with someone they care about. First investment is small and always profitable (platform is controlled). Victim is rewarded to reinforce behavior.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Crypto investment mention</span>
+              <span class="signal-tag danger">Proprietary platform</span>
+              <span class="signal-tag warn">Guaranteed returns shown</span>
+              <span class="signal-tag warn">Small first deposit</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">04</div>
+          <div class="phase-body">
+            <h4>Fattening the Pig <span class="badge red">ESCALATION</span></h4>
+            <p>Victim is encouraged to deposit more after seeing "profits." Platform shows large unrealized gains. Scammer creates urgency (time-limited opportunity, exclusive access). Social proof used: "my uncle runs the platform, I got you special access." Victim may recruit friends/family.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Pressure to deposit more</span>
+              <span class="signal-tag danger">Urgency tactics</span>
+              <span class="signal-tag danger">Unrealized large profits</span>
+              <span class="signal-tag warn">Family/friends recruited</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">05</div>
+          <div class="phase-body">
+            <h4>Withdrawal Block <span class="badge red">EXTRACTION</span></h4>
+            <p>When victim tries to withdraw, platform invents fees: "tax prepayment," "verification deposit," "security unlock." Each fee is a new extraction. Emotional relationship is weaponized: scammer expresses disappointment if victim hesitates. Platform support is also controlled by same criminal network.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Withdrawal fees invented</span>
+              <span class="signal-tag danger">Tax / verification demands</span>
+              <span class="signal-tag danger">Emotional guilt used</span>
+              <span class="signal-tag danger">Support unresponsive</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">06</div>
+          <div class="phase-body">
+            <h4>The Slaughter <span class="badge red">EXIT</span></h4>
+            <p>Full disappearance or final extraction attempt. Account vanishes, platform goes offline. Average victim loss: $10,000–$150,000+. Emotional trauma compounded by shame, making victims reluctant to report. Criminal networks are organized, often based in Southeast Asia (Myanmar, Cambodia, Laos).</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Sudden contact loss</span>
+              <span class="signal-tag danger">Platform offline</span>
+              <span class="signal-tag warn">Victim blames themselves</span>
+              <span class="signal-tag">Under-reported to authorities</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- FLAGGED TABLE -->
-    <div class="section-hdr">Top Flagged Transactions</div>
-    <div class="table-wrap">
-      <div class="table-header">
-        <span>Highest risk transactions — sorted by ensemble score</span>
-        <span id="flagCount" style="color:var(--red)"></span>
-      </div>
-      <div style="overflow-x:auto">
-        <table>
-          <thead>
-            <tr id="tableHead"></tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
+    <!-- INVESTMENT PLAYBOOK -->
+    <div id="playbook-investment" class="playbook-content">
+      <div class="section-label">Investment Fraud · Advance Fee / Ponzi Variants</div>
+      <div class="phase-timeline">
+        <div class="phase">
+          <div class="phase-num">01</div>
+          <div class="phase-body">
+            <h4>Authority Establishment <span class="badge blue">SETUP</span></h4>
+            <p>Impersonates or claims affiliation with legitimate financial institutions, famous investors, or AI trading platforms. Uses professional-looking websites, fake Bloomberg/Forbes articles, fabricated license numbers. Cialdini trigger: Authority.</p>
+            <div class="signals-row">
+              <span class="signal-tag warn">Unverifiable credentials</span>
+              <span class="signal-tag warn">Name-drops institutions</span>
+              <span class="signal-tag warn">Fake press coverage</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">02</div>
+          <div class="phase-body">
+            <h4>FOMO Engineering <span class="badge yellow">MANIPULATION</span></h4>
+            <p>Creates artificial scarcity and urgency. "Only 3 spots left," "IPO closes Friday," "This strategy is being shut down by regulators next month." Targets loss aversion — frames inaction as losing, not just missing out. Often uses fake countdown timers.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Countdown timers</span>
+              <span class="signal-tag danger">Limited spots narrative</span>
+              <span class="signal-tag warn">Regulatory threat framing</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">03</div>
+          <div class="phase-body">
+            <h4>Social Proof Fabrication <span class="badge yellow">VALIDATION</span></h4>
+            <p>Flood of fake testimonials, WhatsApp groups with bots showing fake wins, staged screenshots of bank transfers. "Proof" is pre-fabricated and visually convincing. Bots in group chats create false consensus. Victim is made to feel they would be foolish not to participate.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Screenshot-only proof</span>
+              <span class="signal-tag danger">Group chat with fake wins</span>
+              <span class="signal-tag warn">Cannot verify testimonials</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">04</div>
+          <div class="phase-body">
+            <h4>Exit / Advance Fee <span class="badge red">EXTRACTION</span></h4>
+            <p>Either disappears with funds (Ponzi collapse) or invents fees to release profits. Common fee names: "capital gains tax," "international wire release fee," "AML compliance deposit." Each payment is followed by another invented fee.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Fee to release profits</span>
+              <span class="signal-tag danger">AML fee demand</span>
+              <span class="signal-tag danger">Wire release fees</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- AI REPORT -->
-    <div class="section-hdr">AI Investigation Report</div>
-    <div class="ai-report">
-      <div class="ai-report-header">
-        <div class="ai-report-title">⬡ Claude Analysis — Fraud Intelligence Summary</div>
-        <div class="generating-badge" id="genBadge">GENERATING...</div>
-      </div>
-      <div class="ai-report-body" id="aiReport">
-        <span class="cursor"></span>
+    <!-- IMPERSONATION PLAYBOOK -->
+    <div id="playbook-impersonation" class="playbook-content">
+      <div class="section-label">Authority Impersonation · Bank / Government / Tech Support</div>
+      <div class="phase-timeline">
+        <div class="phase">
+          <div class="phase-num">01</div>
+          <div class="phase-body">
+            <h4>Fear Induction <span class="badge red">SHOCK</span></h4>
+            <p>Spoofed caller ID from "your bank" or "police." Opens with alarming news: account compromised, warrant for arrest, illegal activity detected on your account. Creates immediate high-stress state. Under stress, critical thinking degrades — this is the attacker's goal. Victim is given no time to think.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Spoofed official number</span>
+              <span class="signal-tag danger">Immediate threat framing</span>
+              <span class="signal-tag danger">No time to think</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">02</div>
+          <div class="phase-body">
+            <h4>Isolation & Control <span class="badge red">CAPTURE</span></h4>
+            <p>"Do not tell anyone — this is a confidential investigation." Victim is instructed not to hang up, not to contact real bank. Creates dependency on attacker as the only trusted source. Phone held hostage for hours. Accomplices may play "supervisor" roles for added credibility.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Secrecy demand</span>
+              <span class="signal-tag danger">Do not contact bank</span>
+              <span class="signal-tag danger">Multi-hour call</span>
+              <span class="signal-tag warn">Supervisor escalation theater</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">03</div>
+          <div class="phase-body">
+            <h4>Asset Transfer <span class="badge red">EXTRACTION</span></h4>
+            <p>Instructs victim to move funds to "safe account" (controlled by attacker), buy gift cards and read codes, install remote access software, or withdraw cash for "evidence collection" by a "courier." Each method bypasses bank fraud controls.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Safe account transfer</span>
+              <span class="signal-tag danger">Gift card codes requested</span>
+              <span class="signal-tag danger">Remote access install</span>
+              <span class="signal-tag danger">Cash courier pickup</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
 
+  <!-- KNOWLEDGE BASE PANEL -->
+  <div id="panel-kb" class="panel">
+    <div class="section-label">Fraud Intelligence Knowledge Base</div>
+    <p style="font-size:13px;color:#9ca3af;line-height:1.7;margin-bottom:24px;max-width:700px;">
+      Behavioral science frameworks and detection taxonomies underlying the Scam Detection Copilot's reasoning. Based on Cialdini's influence model, the BITE model of coercive control, and operational fraud intelligence experience.
+    </p>
+    <div class="kb-grid">
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Cialdini's 7 Principles</h3>
+          <span class="kb-icon">🧠</span>
+        </div>
+        <p>Scammers systematically exploit all 7 influence principles: Reciprocity (gifts/favors first), Commitment (small yes → big yes), Social Proof (fake testimonials), Authority (impersonation), Liking (relationship building), Scarcity (FOMO), Unity (in-group belonging).</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Psychology</span>
+          <span class="kb-tag">Behavioral Science</span>
+          <span class="kb-tag">Detection Framework</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>BITE Model Signals</h3>
+          <span class="kb-icon">⚠️</span>
+        </div>
+        <p>Behavior, Information, Thought, Emotion control — originally developed for cult analysis, directly applicable to scam detection. Key signal: victim is systematically cut off from outside validation sources (friends, bank, search engine). Information monopoly is a critical red flag.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Coercive Control</span>
+          <span class="kb-tag">Isolation Detection</span>
+          <span class="kb-tag">BITE Model</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Cognitive Hijacking</h3>
+          <span class="kb-icon">💡</span>
+        </div>
+        <p>Scammers deliberately induce emotional states (fear, love, excitement) that impair prefrontal cortex function. Decisions made under induced stress or romantic attachment bypass rational cost-benefit analysis. Interventions must address the emotional state first, facts second.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Neuroscience</span>
+          <span class="kb-tag">Emotional Manipulation</span>
+          <span class="kb-tag">Intervention Design</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Network Analysis</h3>
+          <span class="kb-icon">🕸️</span>
+        </div>
+        <p>Fraud rings share infrastructure: IPs, device fingerprints, phone numbers, email domains, crypto wallets. Link analysis across merchant/transaction data reveals hidden connections. A single operator may run dozens of fake profiles simultaneously using the same device cluster.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Link Analysis</span>
+          <span class="kb-tag">OSINT</span>
+          <span class="kb-tag">Graph Intelligence</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Pig Butchering Economics</h3>
+          <span class="kb-icon">📊</span>
+        </div>
+        <p>Industrial-scale operation. Criminal networks in SEA (Myanmar, Cambodia) operate call centers with trafficked workers. Average victim loss: $10k–$500k. Crypto rails used for irreversibility. FBI reports $3.5B+ in US crypto investment fraud losses in 2023 alone.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Threat Intelligence</span>
+          <span class="kb-tag">Crypto AML</span>
+          <span class="kb-tag">Organized Crime</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Intervention Principles</h3>
+          <span class="kb-icon">🛡️</span>
+        </div>
+        <p>Effective intervention: (1) Non-accusatory — victim must not feel foolish, (2) Validate emotions first, (3) Ask questions rather than state facts, (4) Introduce doubt gradually, (5) Provide face-saving narrative. Direct confrontation causes psychological reactance and backfires.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Victim Support</span>
+          <span class="kb-tag">Communication Strategy</span>
+          <span class="kb-tag">De-escalation</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT PANEL -->
+  <div id="panel-about" class="panel">
+    <div class="intro-grid">
+      <div class="info-card">
+        <h3>// Project Purpose</h3>
+        <p>This demo showcases the intersection of fraud domain expertise and applied AI — combining behavioral analysis tradecraft from 3+ years at EverCompliant with M.Sc. ML/AI capabilities from Reichman University. Built to demonstrate capability for roles at the frontier of AI-powered fraud defense.</p>
+      </div>
+      <div class="info-card">
+        <h3>// Technical Stack</h3>
+        <p>Frontend: Vanilla HTML/CSS/JS with intelligence-analyst aesthetic. AI Engine: Claude claude-sonnet-4-20250514 via Anthropic API with specialized fraud-analysis prompting. The agent uses structured psychological frameworks as its reasoning backbone.</p>
+      </div>
+      <div class="info-card">
+        <h3>// Methodology</h3>
+        <p>The detection agent applies: Cialdini's 7 influence principles, BITE coercive control model, behavioral anomaly detection, social engineering pattern matching, and phase-based scam lifecycle analysis. Same frameworks used in operational fraud intelligence work.</p>
+      </div>
+      <div class="info-card">
+        <h3>// Relevant Experience</h3>
+        <p>Risk Intelligence Analyst at EverCompliant (2016–2019): merchant fraud detection, AML network analysis, OSINT/WEBINT, link analysis across merchant data. M.Sc. ML thesis: hybrid CNN+Transformer model achieving 30% accuracy improvement over baseline.</p>
+      </div>
+    </div>
   </div>
 
   <footer>
-    <span>Dan Fang · Fraud & Risk Intelligence · M.Sc. ML · <a href="mailto:danfly8888@gmail.com">danfly8888@gmail.com</a></span>
-    <span style="color:var(--muted)">Fraud Analytics Engine v1.0 · Powered by Claude claude-sonnet-4-20250514</span>
+    <span>Dan Fang · Fraud &amp; Risk Intelligence · ML/AI</span>
+  </footer>
+
+</div>
+
+E html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fraud Detection — Dan Fang</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #1e2330;
+    --accent: #00e5ff;
+    --accent2: #ff4757;
+    --accent3: #ffd32a;
+    --accent4: #2ed573;
+    --text: #e8eaf0;
+    --muted: #5a6072;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 32px 0 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .logo-block { display: flex; flex-direction: column; gap: 4px; }
+
+  .logo-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .logo-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .logo-title span { color: var(--accent); }
+
+  .header-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  .header-meta a { color: var(--accent); text-decoration: none; }
+  .header-meta a:hover { text-decoration: underline; }
+
+  /* STATUS BAR */
+  .status-bar {
+    display: flex;
+    gap: 24px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+
+  .status-item { display: flex; align-items: center; gap: 6px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot.green { background: var(--accent4); box-shadow: 0 0 6px var(--accent4); }
+  .dot.blue { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-top: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    padding: 10px 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* PANELS */
+  .panel { display: none; padding-top: 28px; }
+  .panel.active { display: block; }
+
+  /* INTRO SECTION */
+  .intro-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  @media (max-width: 600px) { .intro-grid { grid-template-columns: 1fr; } }
+
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .info-card h3 {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .info-card p { font-size: 14px; color: #9ca3af; line-height: 1.7; }
+
+  /* PLAYBOOK */
+  .playbook-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .playbook-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+
+  .badge.red { color: var(--accent2); border-color: var(--accent2); background: rgba(255,71,87,0.08); }
+  .badge.yellow { color: var(--accent3); border-color: var(--accent3); background: rgba(255,211,42,0.08); }
+  .badge.green { color: var(--accent4); border-color: var(--accent4); background: rgba(46,213,115,0.08); }
+  .badge.blue { color: var(--accent); border-color: var(--accent); background: rgba(0,229,255,0.08); }
+
+  .scam-type-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .scam-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .scam-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .scam-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,0.06); }
+
+  .playbook-content { display: none; }
+  .playbook-content.active { display: block; }
+
+  /* PHASE TIMELINE */
+  .phase-timeline { position: relative; }
+
+  .phase-timeline::before {
+    content: '';
+    position: absolute;
+    left: 18px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+  }
+
+  .phase {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    opacity: 0;
+    transform: translateX(-10px);
+    animation: fadeSlide 0.4s forwards;
+  }
+
+  .phase:nth-child(1) { animation-delay: 0.05s; }
+  .phase:nth-child(2) { animation-delay: 0.1s; }
+  .phase:nth-child(3) { animation-delay: 0.15s; }
+  .phase:nth-child(4) { animation-delay: 0.2s; }
+  .phase:nth-child(5) { animation-delay: 0.25s; }
+  .phase:nth-child(6) { animation-delay: 0.3s; }
+
+  @keyframes fadeSlide {
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .phase-num {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    position: relative;
+    z-index: 1;
+  }
+
+  .phase-body {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .phase-body h4 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .phase-body p { font-size: 13px; color: #9ca3af; line-height: 1.6; margin-bottom: 10px; }
+
+  .signals-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .signal-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.2);
+    color: var(--accent);
+  }
+
+  .signal-tag.danger {
+    background: rgba(255,71,87,0.08);
+    border-color: rgba(255,71,87,0.2);
+    color: var(--accent2);
+  }
+
+  .signal-tag.warn {
+    background: rgba(255,211,42,0.08);
+    border-color: rgba(255,211,42,0.2);
+    color: var(--accent3);
+  }
+
+  /* AGENT PANEL */
+  .agent-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 800px) { .agent-layout { grid-template-columns: 1fr; } }
+
+  .input-section h3 {
+    font-size: 13px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .sample-cases {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .sample-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .sample-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+
+  textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    resize: vertical;
+    min-height: 200px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  .analyze-btn {
+    margin-top: 12px;
+    padding: 12px 28px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .analyze-btn:hover { background: #33ecff; transform: translateY(-1px); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* RESULTS */
+  .result-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .result-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .result-body { padding: 16px; min-height: 300px; }
+
+  .placeholder-text {
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  /* RISK METER */
+  .risk-meter {
+    margin-bottom: 16px;
+    padding: 16px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  .risk-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .risk-score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .risk-score-num {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .risk-bar-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .risk-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  /* SIGNAL LIST */
+  .signal-list { margin-bottom: 14px; }
+  .signal-list h4 {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .signal-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.5;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+  }
+
+  .signal-item:last-child { border-bottom: none; }
+
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  .signal-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  /* RECOMMENDATION */
+  .recommendation {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #9ca3af;
+  }
+
+  .recommendation strong { color: var(--accent); }
+
+  /* KNOWLEDGE BASE PANEL */
+  .kb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .kb-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    transition: border-color 0.2s;
+    cursor: default;
+  }
+
+  .kb-card:hover { border-color: rgba(0,229,255,0.3); }
+
+  .kb-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .kb-card h3 { font-size: 15px; font-weight: 700; }
+  .kb-icon { font-size: 22px; }
+
+  .kb-card p { font-size: 13px; color: #9ca3af; line-height: 1.6; margin-bottom: 12px; }
+
+  .kb-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .kb-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  /* LOADING */
+  .loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    padding: 20px;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,229,255,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* STREAMING TEXT */
+  .stream-text { white-space: pre-wrap; font-size: 13px; line-height: 1.8; color: #c8cdd8; }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background: var(--accent);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 16px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  /* FOOTER */
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .highlight { color: var(--accent); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo-block">
+      <div class="logo-tag">// Fraud Intelligence System v1.0</div>
+      <div class="logo-title">Fraud <span>Detection</span></div>
+    </div>
+    <div class="header-meta">
+      Built by Dan Fang — AI-Driven Fraud &amp; Risk Intelligence Specialist · M.Sc. Machine Learning
+    </div>
+  </header>
+
+  <div class="status-bar">
+    <div class="status-item"><div class="dot green"></div>Agent Online</div>
+    <div class="status-item"><div class="dot blue"></div>Claude claude-sonnet-4-20250514</div>
+    <div class="status-item">Coverage: Romance · Investment · Impersonation · Phishing</div>
+    <div class="status-item">Psychology Framework: Cialdini + BITE Model</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('agent')">🤖 Detection Agent</div>
+    <div class="tab" onclick="switchTab('playbook')">📖 Scam Playbook</div>
+    <div class="tab" onclick="switchTab('kb')">🧠 Knowledge Base</div>
+    <div class="tab" onclick="switchTab('about')">ℹ️ About This Project</div>
+  </div>
+
+  <!-- AGENT PANEL -->
+  <div id="panel-agent" class="panel active">
+    <div class="agent-layout">
+      <div class="input-section">
+        <h3>// Input — Conversation / Case Description</h3>
+        <div class="sample-cases">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:6px 0;">Load sample:</span>
+          <button class="sample-btn" onclick="loadSample('romance')">Romance Scam</button>
+          <button class="sample-btn" onclick="loadSample('investment')">Pig Butchering</button>
+          <button class="sample-btn" onclick="loadSample('impersonation')">Bank Impersonation</button>
+          <button class="sample-btn" onclick="loadSample('phishing')">Phishing</button>
+        </div>
+        <textarea id="caseInput" placeholder="Paste a conversation transcript, case description, or suspicious message here...
+
+Example: 'Hi, I matched with someone on Tinder 3 weeks ago. We talk every day. Yesterday they said they have a special crypto investment opportunity and showed me their portfolio making $50k/month...'"></textarea>
+        <button class="analyze-btn" onclick="analyzeCase()" id="analyzeBtn">
+          <span>▶</span> ANALYZE CASE
+        </button>
+      </div>
+
+      <div>
+        <div class="result-header">
+          <span>◈</span> ANALYSIS OUTPUT
+        </div>
+        <div class="result-panel">
+          <div class="result-body" id="resultBody">
+            <div class="placeholder-text">
+              ◈ Awaiting case input<br><br>
+              Paste a conversation or<br>
+              load a sample case above
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYBOOK PANEL -->
+  <div id="panel-playbook" class="panel">
+    <div class="playbook-header">
+      <h2>Scam Playbook Analysis</h2>
+      <span class="badge red">HIGH THREAT</span>
+    </div>
+
+    <p style="font-size:13px;color:#9ca3af;line-height:1.7;margin-bottom:20px;max-width:700px;">
+      Structured behavioral analysis of modern scam typologies. Each playbook deconstructs the attacker's psychological manipulation tactics, phase-by-phase escalation patterns, and detectable risk signals — mapped against Cialdini's influence principles and behavioral science frameworks.
+    </p>
+
+    <div class="scam-type-selector">
+      <button class="scam-btn active" onclick="showPlaybook('romance', this)">Romance / Pig Butchering</button>
+      <button class="scam-btn" onclick="showPlaybook('investment', this)">Investment Fraud</button>
+      <button class="scam-btn" onclick="showPlaybook('impersonation', this)">Authority Impersonation</button>
+    </div>
+
+    <!-- ROMANCE PLAYBOOK -->
+    <div id="playbook-romance" class="playbook-content active">
+      <div class="section-label">Romance Scam · SHA Tǔ Zhū Pán (杀猪盘) — Pig Butchering</div>
+      <div class="phase-timeline">
+        <div class="phase">
+          <div class="phase-num">01</div>
+          <div class="phase-body">
+            <h4>Seeding & First Contact <span class="badge blue">RECRUITMENT</span></h4>
+            <p>Attacker initiates contact via dating apps, social media, or "wrong number" SMS. Profile is meticulously crafted: attractive photos (often stolen), high-status occupation (doctor, finance, engineer), international travel narrative. Initial messages are warm but non-threatening.</p>
+            <div class="signals-row">
+              <span class="signal-tag warn">Profile too perfect</span>
+              <span class="signal-tag warn">Unsolicited contact</span>
+              <span class="signal-tag warn">Fast emotional escalation</span>
+              <span class="signal-tag">Never video calls</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">02</div>
+          <div class="phase-body">
+            <h4>Love Bombing <span class="badge yellow">TRUST BUILDING</span></h4>
+            <p>Rapid emotional bonding through daily contact, affectionate language, deep personal questions. Victim feels uniquely understood. Psychological mechanism: reciprocity + social proof. Duration: 2–8 weeks. Victim is gradually isolated from social support network through subtle criticism of friends/family.</p>
+            <div class="signals-row">
+              <span class="signal-tag warn">Daily contact within days</span>
+              <span class="signal-tag warn">Calls you "soulmate" early</span>
+              <span class="signal-tag warn">Never meets in person</span>
+              <span class="signal-tag">Future faking (plans trips)</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">03</div>
+          <div class="phase-body">
+            <h4>Financial Introduction <span class="badge yellow">GROOMING</span></h4>
+            <p>Introduces crypto investment "casually" — mentions they recently made money, shows screenshots of returns. Frames as sharing a gift with someone they care about. First investment is small and always profitable (platform is controlled). Victim is rewarded to reinforce behavior.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Crypto investment mention</span>
+              <span class="signal-tag danger">Proprietary platform</span>
+              <span class="signal-tag warn">Guaranteed returns shown</span>
+              <span class="signal-tag warn">Small first deposit</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">04</div>
+          <div class="phase-body">
+            <h4>Fattening the Pig <span class="badge red">ESCALATION</span></h4>
+            <p>Victim is encouraged to deposit more after seeing "profits." Platform shows large unrealized gains. Scammer creates urgency (time-limited opportunity, exclusive access). Social proof used: "my uncle runs the platform, I got you special access." Victim may recruit friends/family.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Pressure to deposit more</span>
+              <span class="signal-tag danger">Urgency tactics</span>
+              <span class="signal-tag danger">Unrealized large profits</span>
+              <span class="signal-tag warn">Family/friends recruited</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">05</div>
+          <div class="phase-body">
+            <h4>Withdrawal Block <span class="badge red">EXTRACTION</span></h4>
+            <p>When victim tries to withdraw, platform invents fees: "tax prepayment," "verification deposit," "security unlock." Each fee is a new extraction. Emotional relationship is weaponized: scammer expresses disappointment if victim hesitates. Platform support is also controlled by same criminal network.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Withdrawal fees invented</span>
+              <span class="signal-tag danger">Tax / verification demands</span>
+              <span class="signal-tag danger">Emotional guilt used</span>
+              <span class="signal-tag danger">Support unresponsive</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">06</div>
+          <div class="phase-body">
+            <h4>The Slaughter <span class="badge red">EXIT</span></h4>
+            <p>Full disappearance or final extraction attempt. Account vanishes, platform goes offline. Average victim loss: $10,000–$150,000+. Emotional trauma compounded by shame, making victims reluctant to report. Criminal networks are organized, often based in Southeast Asia (Myanmar, Cambodia, Laos).</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Sudden contact loss</span>
+              <span class="signal-tag danger">Platform offline</span>
+              <span class="signal-tag warn">Victim blames themselves</span>
+              <span class="signal-tag">Under-reported to authorities</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVESTMENT PLAYBOOK -->
+    <div id="playbook-investment" class="playbook-content">
+      <div class="section-label">Investment Fraud · Advance Fee / Ponzi Variants</div>
+      <div class="phase-timeline">
+        <div class="phase">
+          <div class="phase-num">01</div>
+          <div class="phase-body">
+            <h4>Authority Establishment <span class="badge blue">SETUP</span></h4>
+            <p>Impersonates or claims affiliation with legitimate financial institutions, famous investors, or AI trading platforms. Uses professional-looking websites, fake Bloomberg/Forbes articles, fabricated license numbers. Cialdini trigger: Authority.</p>
+            <div class="signals-row">
+              <span class="signal-tag warn">Unverifiable credentials</span>
+              <span class="signal-tag warn">Name-drops institutions</span>
+              <span class="signal-tag warn">Fake press coverage</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">02</div>
+          <div class="phase-body">
+            <h4>FOMO Engineering <span class="badge yellow">MANIPULATION</span></h4>
+            <p>Creates artificial scarcity and urgency. "Only 3 spots left," "IPO closes Friday," "This strategy is being shut down by regulators next month." Targets loss aversion — frames inaction as losing, not just missing out. Often uses fake countdown timers.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Countdown timers</span>
+              <span class="signal-tag danger">Limited spots narrative</span>
+              <span class="signal-tag warn">Regulatory threat framing</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">03</div>
+          <div class="phase-body">
+            <h4>Social Proof Fabrication <span class="badge yellow">VALIDATION</span></h4>
+            <p>Flood of fake testimonials, WhatsApp groups with bots showing fake wins, staged screenshots of bank transfers. "Proof" is pre-fabricated and visually convincing. Bots in group chats create false consensus. Victim is made to feel they would be foolish not to participate.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Screenshot-only proof</span>
+              <span class="signal-tag danger">Group chat with fake wins</span>
+              <span class="signal-tag warn">Cannot verify testimonials</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">04</div>
+          <div class="phase-body">
+            <h4>Exit / Advance Fee <span class="badge red">EXTRACTION</span></h4>
+            <p>Either disappears with funds (Ponzi collapse) or invents fees to release profits. Common fee names: "capital gains tax," "international wire release fee," "AML compliance deposit." Each payment is followed by another invented fee.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Fee to release profits</span>
+              <span class="signal-tag danger">AML fee demand</span>
+              <span class="signal-tag danger">Wire release fees</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPERSONATION PLAYBOOK -->
+    <div id="playbook-impersonation" class="playbook-content">
+      <div class="section-label">Authority Impersonation · Bank / Government / Tech Support</div>
+      <div class="phase-timeline">
+        <div class="phase">
+          <div class="phase-num">01</div>
+          <div class="phase-body">
+            <h4>Fear Induction <span class="badge red">SHOCK</span></h4>
+            <p>Spoofed caller ID from "your bank" or "police." Opens with alarming news: account compromised, warrant for arrest, illegal activity detected on your account. Creates immediate high-stress state. Under stress, critical thinking degrades — this is the attacker's goal. Victim is given no time to think.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Spoofed official number</span>
+              <span class="signal-tag danger">Immediate threat framing</span>
+              <span class="signal-tag danger">No time to think</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">02</div>
+          <div class="phase-body">
+            <h4>Isolation & Control <span class="badge red">CAPTURE</span></h4>
+            <p>"Do not tell anyone — this is a confidential investigation." Victim is instructed not to hang up, not to contact real bank. Creates dependency on attacker as the only trusted source. Phone held hostage for hours. Accomplices may play "supervisor" roles for added credibility.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Secrecy demand</span>
+              <span class="signal-tag danger">Do not contact bank</span>
+              <span class="signal-tag danger">Multi-hour call</span>
+              <span class="signal-tag warn">Supervisor escalation theater</span>
+            </div>
+          </div>
+        </div>
+        <div class="phase">
+          <div class="phase-num">03</div>
+          <div class="phase-body">
+            <h4>Asset Transfer <span class="badge red">EXTRACTION</span></h4>
+            <p>Instructs victim to move funds to "safe account" (controlled by attacker), buy gift cards and read codes, install remote access software, or withdraw cash for "evidence collection" by a "courier." Each method bypasses bank fraud controls.</p>
+            <div class="signals-row">
+              <span class="signal-tag danger">Safe account transfer</span>
+              <span class="signal-tag danger">Gift card codes requested</span>
+              <span class="signal-tag danger">Remote access install</span>
+              <span class="signal-tag danger">Cash courier pickup</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KNOWLEDGE BASE PANEL -->
+  <div id="panel-kb" class="panel">
+    <div class="section-label">Fraud Intelligence Knowledge Base</div>
+    <p style="font-size:13px;color:#9ca3af;line-height:1.7;margin-bottom:24px;max-width:700px;">
+      Behavioral science frameworks and detection taxonomies underlying the Scam Detection Copilot's reasoning. Based on Cialdini's influence model, the BITE model of coercive control, and operational fraud intelligence experience.
+    </p>
+    <div class="kb-grid">
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Cialdini's 7 Principles</h3>
+          <span class="kb-icon">🧠</span>
+        </div>
+        <p>Scammers systematically exploit all 7 influence principles: Reciprocity (gifts/favors first), Commitment (small yes → big yes), Social Proof (fake testimonials), Authority (impersonation), Liking (relationship building), Scarcity (FOMO), Unity (in-group belonging).</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Psychology</span>
+          <span class="kb-tag">Behavioral Science</span>
+          <span class="kb-tag">Detection Framework</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>BITE Model Signals</h3>
+          <span class="kb-icon">⚠️</span>
+        </div>
+        <p>Behavior, Information, Thought, Emotion control — originally developed for cult analysis, directly applicable to scam detection. Key signal: victim is systematically cut off from outside validation sources (friends, bank, search engine). Information monopoly is a critical red flag.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Coercive Control</span>
+          <span class="kb-tag">Isolation Detection</span>
+          <span class="kb-tag">BITE Model</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Cognitive Hijacking</h3>
+          <span class="kb-icon">💡</span>
+        </div>
+        <p>Scammers deliberately induce emotional states (fear, love, excitement) that impair prefrontal cortex function. Decisions made under induced stress or romantic attachment bypass rational cost-benefit analysis. Interventions must address the emotional state first, facts second.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Neuroscience</span>
+          <span class="kb-tag">Emotional Manipulation</span>
+          <span class="kb-tag">Intervention Design</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Network Analysis</h3>
+          <span class="kb-icon">🕸️</span>
+        </div>
+        <p>Fraud rings share infrastructure: IPs, device fingerprints, phone numbers, email domains, crypto wallets. Link analysis across merchant/transaction data reveals hidden connections. A single operator may run dozens of fake profiles simultaneously using the same device cluster.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Link Analysis</span>
+          <span class="kb-tag">OSINT</span>
+          <span class="kb-tag">Graph Intelligence</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Pig Butchering Economics</h3>
+          <span class="kb-icon">📊</span>
+        </div>
+        <p>Industrial-scale operation. Criminal networks in SEA (Myanmar, Cambodia) operate call centers with trafficked workers. Average victim loss: $10k–$500k. Crypto rails used for irreversibility. FBI reports $3.5B+ in US crypto investment fraud losses in 2023 alone.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Threat Intelligence</span>
+          <span class="kb-tag">Crypto AML</span>
+          <span class="kb-tag">Organized Crime</span>
+        </div>
+      </div>
+      <div class="kb-card">
+        <div class="kb-card-header">
+          <h3>Intervention Principles</h3>
+          <span class="kb-icon">🛡️</span>
+        </div>
+        <p>Effective intervention: (1) Non-accusatory — victim must not feel foolish, (2) Validate emotions first, (3) Ask questions rather than state facts, (4) Introduce doubt gradually, (5) Provide face-saving narrative. Direct confrontation causes psychological reactance and backfires.</p>
+        <div class="kb-tags">
+          <span class="kb-tag">Victim Support</span>
+          <span class="kb-tag">Communication Strategy</span>
+          <span class="kb-tag">De-escalation</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ABOUT PANEL -->
+  <div id="panel-about" class="panel">
+    <div class="intro-grid">
+      <div class="info-card">
+        <h3>// Project Purpose</h3>
+        <p>This demo showcases the intersection of fraud domain expertise and applied AI — combining behavioral analysis tradecraft from 3+ years at EverCompliant with M.Sc. ML/AI capabilities from Reichman University. Built to demonstrate capability for roles at the frontier of AI-powered fraud defense.</p>
+      </div>
+      <div class="info-card">
+        <h3>// Technical Stack</h3>
+        <p>Frontend: Vanilla HTML/CSS/JS with intelligence-analyst aesthetic. AI Engine: Claude claude-sonnet-4-20250514 via Anthropic API with specialized fraud-analysis prompting. The agent uses structured psychological frameworks as its reasoning backbone.</p>
+      </div>
+      <div class="info-card">
+        <h3>// Methodology</h3>
+        <p>The detection agent applies: Cialdini's 7 influence principles, BITE coercive control model, behavioral anomaly detection, social engineering pattern matching, and phase-based scam lifecycle analysis. Same frameworks used in operational fraud intelligence work.</p>
+      </div>
+      <div class="info-card">
+        <h3>// Relevant Experience</h3>
+        <p>Risk Intelligence Analyst at EverCompliant (2016–2019): merchant fraud detection, AML network analysis, OSINT/WEBINT, link analysis across merchant data. M.Sc. ML thesis: hybrid CNN+Transformer model achieving 30% accuracy improvement over baseline.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Dan Fang · Fraud &amp; Risk Intelligence · ML/AI</span>
   </footer>
 
 </div>
 
 <script>
-// ── CHART DEFAULTS ──────────────────────────────────────────────────────
-Chart.defaults.color = '#4a5270';
-Chart.defaults.borderColor = '#1c2235';
-Chart.defaults.font.family = "'IBM Plex Mono', monospace";
-Chart.defaults.font.size = 11;
+  const SAMPLES = {
+    romance: `I need help. I met someone on Instagram 6 weeks ago. He says his name is Michael, works as a civil engineer on an offshore oil platform. We've been talking every day, he sends me good morning messages and calls me his soulmate. He's never been able to video call because of "poor signal on the platform."
 
-const CYAN = '#00d4ff', RED = '#ff3b5c', AMBER = '#ffb020',
-      GREEN = '#00e676', PURPLE = '#b388ff', MUTED = '#4a5270';
+Last week he mentioned his cousin manages a crypto trading platform and he has been making huge returns. He showed me screenshots of $80,000 in his account. He offered to help me invest, said I could start with just $500. I did, and within 3 days it showed $1,200 profit on the platform. 
 
-let charts = {};
+Now he's saying there's a special window where the platform returns are 3x normal and I should put in $10,000 before it closes on Friday. He said he loves me and he wants us to have financial freedom together before he visits me next month. I really like him but something feels off. Am I being scammed?`,
 
-// ── DRAG & DROP ─────────────────────────────────────────────────────────
-const dropZone = document.getElementById('dropZone');
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.classList.remove('drag-over');
-  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-});
+    investment: `I got a message in a WhatsApp group about an AI trading bot developed by former Goldman Sachs engineers. They showed a live trading session on Zoom where the bot made $4,000 in 20 minutes. The group has 200+ members posting their profits daily with bank transfer screenshots.
 
-// ── SAMPLE DATA GENERATORS ──────────────────────────────────────────────
-function generateSample(type) {
-  const rows = [];
-  const N = 1200;
-  const fraudRate = type === 'merchant' ? 0.04 : 0.025;
+The minimum investment is $3,000 and they guarantee 15-20% monthly returns. They have a website with what looks like SEC registration numbers and there are YouTube interviews with the "CEO." There's a countdown timer saying spots close in 48 hours. Several people in the group said they already withdrew profits successfully.
 
-  for (let i = 0; i < N; i++) {
-    const isFraud = Math.random() < fraudRate;
-    const hour = isFraud
-      ? [1,2,3,0,23][Math.floor(Math.random()*5)]
-      : Math.floor(Math.random() * 16) + 7;
+A "senior analyst" from the company just called me and offered a special deal — if I invest $5,000 today I get a VIP tier with 25% returns. He says this strategy is being shut down by regulations in 3 months so now is the last chance.`,
 
-    if (type === 'creditcard') {
-      rows.push({
-        transaction_id: `TXN${String(i).padStart(6,'0')}`,
-        amount: isFraud
-          ? (Math.random() * 2000 + 500).toFixed(2)
-          : (Math.exp(Math.random() * 4 + 2)).toFixed(2),
-        hour, card_present: isFraud ? (Math.random()<0.2?1:0) : (Math.random()<0.7?1:0),
-        distance_from_home_km: isFraud ? (Math.random()*900+100).toFixed(1) : (Math.random()*30).toFixed(1),
-        merchant_category: isFraud
-          ? ['electronics','gift_cards','crypto','wire'][Math.floor(Math.random()*4)]
-          : ['grocery','restaurant','retail','gas','pharmacy'][Math.floor(Math.random()*5)],
-        is_fraud: isFraud ? 1 : 0
-      });
-    } else if (type === 'paysim') {
-      const typeOpts = isFraud ? ['TRANSFER','CASH_OUT'] : ['PAYMENT','TRANSFER','CASH_IN','CASH_OUT','DEBIT'];
-      rows.push({
-        step: Math.floor(Math.random()*744)+1,
-        type: typeOpts[Math.floor(Math.random()*typeOpts.length)],
-        amount: isFraud ? (Math.random()*400000+50000).toFixed(2) : (Math.random()*5000+10).toFixed(2),
-        nameOrig: `C${Math.floor(Math.random()*1e9)}`,
-        nameDest: `C${Math.floor(Math.random()*1e9)}`,
-        oldbalanceOrg: (Math.random()*100000).toFixed(2),
-        newbalanceOrig: isFraud ? '0.00' : (Math.random()*100000).toFixed(2),
-        isFraud: isFraud ? 1 : 0
-      });
-    } else {
-      rows.push({
-        merchant_id: `M${String(Math.floor(Math.random()*200)).padStart(4,'0')}`,
-        transaction_id: `TXN${String(i).padStart(6,'0')}`,
-        amount: isFraud ? (Math.random()*8000+1000).toFixed(2) : (Math.exp(Math.random()*4+3)).toFixed(2),
-        hour, country: isFraud
-          ? ['NG','RU','CN','VN'][Math.floor(Math.random()*4)]
-          : ['US','UK','DE','FR','IL'][Math.floor(Math.random()*5)],
-        chargeback: isFraud ? (Math.random()<0.6?1:0) : (Math.random()<0.02?1:0),
-        is_fraud: isFraud ? 1 : 0
-      });
-    }
-  }
-  return rows;
-}
+    impersonation: `I got a call today from my bank's number (I checked, it matched exactly). The man said he was from the fraud department and my account had been compromised — someone in another country was trying to wire $15,000 out. He said they caught it just in time.
 
-function loadSample(type) {
-  const rows = generateSample(type);
-  const headers = Object.keys(rows[0]);
-  const csv = [headers.join(','), ...rows.map(r => headers.map(h => r[h]).join(','))].join('\n');
-  processData(Papa.parse(csv, { header: true, dynamicTyping: true }).data, type + '_sample.csv');
-}
+He said to protect my money I need to transfer everything to a "secure holding account" they set up for me, and then once the investigation is complete (3-5 business days) the money will be returned. He told me NOT to contact the bank branch directly because the branch staff are under investigation and might be involved. He stayed on the line with me the whole time.
 
-function handleFile(file) {
-  if (!file) return;
-  Papa.parse(file, {
-    header: true, dynamicTyping: true, skipEmptyLines: true,
-    complete: r => processData(r.data, file.name)
-  });
-}
+He also said I shouldn't tell my family because it could compromise the investigation. His supervisor got on the call and confirmed everything. They sounded very official and professional. Should I do the transfer?`,
 
-// ── COLUMN DETECTION ────────────────────────────────────────────────────
-function detectColumns(cols) {
-  const c = cols.map(x => x.toLowerCase());
-  return {
-    amount:    cols.find((_,i) => /amount|amt|value|price|sum/.test(c[i])),
-    fraud:     cols.find((_,i) => /fraud|label|target|class|is_fraud|isfraud/.test(c[i])),
-    hour:      cols.find((_,i) => /hour|time|step/.test(c[i])),
-    merchant:  cols.find((_,i) => /merchant|mcc|category|type|nameorig/.test(c[i])),
-    country:   cols.find((_,i) => /country|region|geo|location/.test(c[i])),
-    device:    cols.find((_,i) => /device|ip|browser|os/.test(c[i])),
-    distance:  cols.find((_,i) => /distance|km|miles/.test(c[i])),
-    id:        cols.find((_,i) => /id|transaction|txn|tx_id/.test(c[i])),
+    phishing: `I received an email from what looks like my bank saying there is "unusual activity" on my account and I need to verify my identity within 24 hours or the account will be frozen. The email has my bank's logo and looks exactly like their normal emails.
+
+The link takes me to what looks like my bank's website — same colors, same logo. It's asking for my username, password, and then it's asking for my full card number, CVV, and the 6-digit SMS code "for verification." The URL in my browser looks slightly different from normal — it says "secure-bankname-verify.com" instead of "bankname.com."
+
+The email says this is urgent and if I don't complete verification in the next hour my account will be permanently suspended.`
   };
+
+  function loadSample(type) {
+    document.getElementById('caseInput').value = SAMPLES[type];
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+  }
+
+  function showPlaybook(type, btn) {
+    document.querySelectorAll('.scam-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.playbook-content').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('playbook-' + type).classList.add('active');
+  }
+
+  async function analyzeCase() {
+    const input = document.getElementById('caseInput').value.trim();
+    if (!input) {
+      document.getElementById('resultBody').innerHTML = '<div class="placeholder-text">⚠ Please enter a case description first</div>';
+      return;
+    }
+
+    const btn = document.getElementById('analyzeBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> ANALYZING...';
+
+    const resultBody = document.getElementById('resultBody');
+    resultBody.innerHTML = '<div class="loading"><div class="spinner"></div>Processing case through fraud detection frameworks...</div>';
+
+    const systemPrompt = `You are an expert fraud intelligence analyst with deep knowledge of social engineering, scam psychology, and financial crime. You have 10+ years experience in fraud detection at fintech companies and deep expertise in:
+- Cialdini's 7 influence principles as used by scammers
+- BITE model of coercive control
+- Pig butchering / romance scam tactics
+- Investment fraud and advance fee schemes  
+- Impersonation and vishing attacks
+- Behavioral anomaly detection
+- AML red flags
+
+Analyze the provided case and return a JSON object with exactly this structure:
+{
+  "scam_type": "string (e.g. Romance/Pig Butchering, Investment Fraud, Bank Impersonation, Phishing, Unknown/Benign)",
+  "risk_score": number (0-100),
+  "risk_level": "LOW | MEDIUM | HIGH | CRITICAL",
+  "verdict": "string (1-2 sentence clear verdict)",
+  "psychological_tactics": ["array of tactics being used, e.g. Love Bombing, Authority, Scarcity, Isolation"],
+  "red_flags": [
+    {"flag": "string", "severity": "HIGH|MEDIUM|LOW", "explanation": "string"}
+  ],
+  "phase": "string (current phase in scam lifecycle)",
+  "intervention": "string (what the victim should do now, written with empathy and without blame)",
+  "confidence": number (0-100)
 }
 
-// ── RISK SCORING ────────────────────────────────────────────────────────
-function scoreRow(row, colMap, stats) {
-  let score = 0;
-  const amt = colMap.amount ? +row[colMap.amount] : 0;
-  const hour = colMap.hour ? +row[colMap.hour] : 12;
+Return ONLY valid JSON, no other text.`;
 
-  // Amount vs median
-  if (stats.medianAmount > 0) {
-    const ratio = amt / stats.medianAmount;
-    score += Math.min(ratio / 10, 1) * 35;
+    try {
+      const response = await fetch('https://anthropic-proxy.danfly8888.workers.dev/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: systemPrompt,
+          message: `Analyze this case:\n\n${input}`
+        })
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      const clean = data.text.replace(/```json|```/g, '').trim();
+      const result = JSON.parse(clean);
+      renderResult(result);
+
+    } catch (err) {
+      resultBody.innerHTML = `<div style="color:var(--accent2);font-family:var(--mono);font-size:12px;padding:20px;">
+        Error: ${err.message}<br><br>
+        <span style="color:var(--muted)">Check console for details</span>
+      </div>`;
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<span>▶</span> ANALYZE CASE';
   }
 
-  // Late night
-  const h = hour % 24;
-  if (h <= 5 || h >= 23) score += 25;
+  function renderResult(r) {
+    const riskColor = r.risk_level === 'CRITICAL' ? 'var(--accent2)' :
+                      r.risk_level === 'HIGH' ? '#ff6b35' :
+                      r.risk_level === 'MEDIUM' ? 'var(--accent3)' : 'var(--accent4)';
 
-  // High-risk merchant category
-  if (colMap.merchant) {
-    const m = String(row[colMap.merchant]).toLowerCase();
-    if (/crypto|wire|transfer|gift|electronics|jewelry|cash_out/.test(m)) score += 20;
-    else if (/restaurant|grocery|pharmacy|retail/.test(m)) score -= 5;
-  }
+    const flagHTML = r.red_flags.map((f, i) => `
+      <div class="signal-item" style="animation-delay:${i * 0.08}s">
+        <span class="signal-icon">${f.severity === 'HIGH' ? '🔴' : f.severity === 'MEDIUM' ? '🟡' : '🟢'}</span>
+        <div>
+          <div style="font-weight:600;font-size:12px;margin-bottom:2px;">${f.flag}</div>
+          <div style="font-size:11px;color:var(--muted);">${f.explanation}</div>
+        </div>
+      </div>
+    `).join('');
 
-  // Foreign country
-  if (colMap.country) {
-    const risky = ['ng','ru','cn','vn','br','pk'];
-    if (risky.includes(String(row[colMap.country]).toLowerCase())) score += 15;
-  }
+    const tacticTags = r.psychological_tactics.map(t =>
+      `<span class="signal-tag danger">${t}</span>`
+    ).join('');
 
-  // Card not present
-  if (colMap.device) {
-    const d = String(row[colMap.device]).toLowerCase();
-    if (/vpn|tor|proxy/.test(d)) score += 20;
-  }
+    document.getElementById('resultBody').innerHTML = `
+      <div class="risk-meter">
+        <div class="risk-label">RISK ASSESSMENT</div>
+        <div class="risk-score-row">
+          <div>
+            <div class="risk-score-num" style="color:${riskColor}">${r.risk_score}<span style="font-size:14px;color:var(--muted)">/100</span></div>
+            <div style="font-family:var(--mono);font-size:10px;color:${riskColor};margin-top:2px;letter-spacing:2px">${r.risk_level}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px">${r.scam_type}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Phase: ${r.phase}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--muted)">Confidence: ${r.confidence}%</div>
+          </div>
+        </div>
+        <div class="risk-bar-track">
+          <div class="risk-bar-fill" id="riskBar" style="background:${riskColor}"></div>
+        </div>
+      </div>
 
-  // Distance
-  if (colMap.distance) {
-    const dist = +row[colMap.distance];
-    if (dist > 200) score += Math.min(dist / 500, 1) * 20;
-  }
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:14px;font-size:13px;line-height:1.6;color:var(--text)">
+        ${r.verdict}
+      </div>
 
-  // PaySim: balance zeroed
-  if (row['newbalanceOrig'] !== undefined && +row['newbalanceOrig'] === 0 && amt > 1000) score += 30;
-  if (row['chargeback'] !== undefined && +row['chargeback'] === 1) score += 25;
+      <div class="signal-list">
+        <h4>PSYCHOLOGICAL TACTICS DETECTED</h4>
+        <div class="signals-row" style="margin-bottom:4px">${tacticTags}</div>
+      </div>
 
-  return Math.min(Math.max(score, 0), 100);
-}
-
-function riskTier(score) {
-  if (score >= 65) return 'CRITICAL';
-  if (score >= 45) return 'HIGH';
-  if (score >= 25) return 'MEDIUM';
-  return 'LOW';
-}
-
-// ── MAIN PROCESS ────────────────────────────────────────────────────────
-async function processData(data, filename) {
-  data = data.filter(r => r && Object.values(r).some(v => v !== null && v !== ''));
-  if (data.length === 0) return;
-
-  const loading = document.getElementById('loadingSection');
-  const fill = document.getElementById('loadingFill');
-  const loadText = document.getElementById('loadingText');
-  loading.style.display = 'block';
-
-  const steps = ['Parsing CSV...', 'Detecting columns...', 'Computing statistics...', 'Scoring transactions...', 'Rendering visualizations...'];
-  for (let i = 0; i < steps.length; i++) {
-    loadText.textContent = steps[i];
-    fill.style.width = ((i+1)/steps.length*100) + '%';
-    await sleep(220);
-  }
-  loading.style.display = 'none';
-
-  const cols = Object.keys(data[0]);
-  const colMap = detectColumns(cols);
-
-  // Stats
-  const amounts = colMap.amount ? data.map(r => +r[colMap.amount]).filter(v => !isNaN(v) && v > 0) : [];
-  const sortedAmt = [...amounts].sort((a,b) => a-b);
-  const medianAmount = sortedAmt[Math.floor(sortedAmt.length/2)] || 1;
-  const stats = { medianAmount };
-
-  // Score all rows
-  data.forEach(r => {
-    r._score = scoreRow(r, colMap, stats);
-    r._tier = riskTier(r._score);
-  });
-
-  const fraudCol = colMap.fraud;
-  const hasFraudLabel = !!fraudCol;
-  const totalFraud = hasFraudLabel ? data.filter(r => +r[fraudCol] === 1).length : null;
-  const flaggedHigh = data.filter(r => r._score >= 45).length;
-
-  // Render column map
-  const colMapEl = document.getElementById('colMap');
-  colMapEl.innerHTML = `
-    <div class="col-map-title">// AUTO-DETECTED COLUMNS — ${filename} — ${data.length.toLocaleString()} rows</div>
-    <div class="col-map-grid">
-      ${cols.map(c => {
-        const isKey = Object.values(colMap).includes(c) && c === colMap.fraud;
-        const isMapped = Object.values(colMap).includes(c);
-        return `<span class="col-chip ${isKey?'key':isMapped?'mapped':''}">${c}</span>`;
-      }).join('')}
-    </div>
-    <div style="margin-top:10px;color:var(--muted);font-size:10px">
-      <span style="color:var(--green)">■</span> Mapped feature &nbsp;
-      <span style="color:var(--cyan)">■</span> Fraud label &nbsp;
-      <span style="color:var(--muted)">■</span> Unused column
-    </div>
-  `;
-
-  // Stat cards
-  const avgAmt = amounts.length ? amounts.reduce((a,b)=>a+b,0)/amounts.length : 0;
-  const maxAmt = amounts.length ? Math.max(...amounts) : 0;
-  const tierCounts = {CRITICAL:0, HIGH:0, MEDIUM:0, LOW:0};
-  data.forEach(r => tierCounts[r._tier]++);
-
-  const statDefs = [
-    { label: 'Total Transactions', value: data.length.toLocaleString(), sub: filename, color: 'var(--cyan)' },
-    { label: 'Flagged HIGH+', value: flaggedHigh.toLocaleString(), sub: `${(flaggedHigh/data.length*100).toFixed(1)}% of portfolio`, color: 'var(--red)' },
-    { label: 'Avg Transaction', value: '$' + avgAmt.toLocaleString('en', {maximumFractionDigits:0}), sub: `max $${maxAmt.toLocaleString('en', {maximumFractionDigits:0})}`, color: 'var(--amber)' },
-    { label: 'Critical Risk', value: tierCounts.CRITICAL.toLocaleString(), sub: `${(tierCounts.CRITICAL/data.length*100).toFixed(1)}% of portfolio`, color: 'var(--red)' },
-    ...(hasFraudLabel ? [{ label: 'Confirmed Fraud', value: totalFraud.toLocaleString(), sub: `${(totalFraud/data.length*100).toFixed(2)}% fraud rate`, color: 'var(--red)' }] : []),
-    { label: 'Columns Detected', value: cols.length, sub: `${Object.values(colMap).filter(Boolean).length} mapped to features`, color: 'var(--green)' },
-  ];
-
-  document.getElementById('statRow').innerHTML = statDefs.map(s => `
-    <div class="stat-card">
-      <div class="stat-label">${s.label}</div>
-      <div class="stat-value" style="color:${s.color}">${s.value}</div>
-      <div class="stat-sub">${s.sub}</div>
-    </div>
-  `).join('');
-
-  // Charts
-  destroyCharts();
-  await sleep(50);
-
-  // Chart 1: Amount distribution
-  if (amounts.length) {
-    const logAmts = amounts.map(a => Math.log10(a+1));
-    const bins = 30;
-    const min = Math.min(...logAmts), max = Math.max(...logAmts);
-    const step = (max-min)/bins;
-    const allBins = Array(bins).fill(0);
-    const fraudBins = Array(bins).fill(0);
-    data.forEach(r => {
-      const a = +r[colMap.amount];
-      if (!a || isNaN(a)) return;
-      const b = Math.min(Math.floor((Math.log10(a+1)-min)/step), bins-1);
-      allBins[b]++;
-      if (hasFraudLabel && +r[fraudCol]===1) fraudBins[b]++;
-    });
-    const labels = allBins.map((_,i) => '$'+Math.round(Math.pow(10,(min+i*step))).toLocaleString());
-    charts.amount = new Chart(document.getElementById('chartAmount'), {
-      type: 'bar',
-      data: { labels,
-        datasets: [
-          { label: 'All', data: allBins, backgroundColor: 'rgba(0,212,255,0.3)', borderColor: CYAN, borderWidth: 1 },
-          ...(hasFraudLabel ? [{ label: 'Fraud', data: fraudBins, backgroundColor: 'rgba(255,59,92,0.6)', borderColor: RED, borderWidth: 1 }] : [])
-        ]
-      },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}},
-        scales:{ x:{display:false}, y:{grid:{color:'#1c2235'}} } }
-    });
-  }
-
-  // Chart 2: Hour analysis
-  if (colMap.hour) {
-    const hourBins = Array(24).fill(0);
-    const hourFraud = Array(24).fill(0);
-    data.forEach(r => {
-      const h = Math.floor(+r[colMap.hour]) % 24;
-      if (h >= 0 && h < 24) {
-        hourBins[h]++;
-        if (hasFraudLabel && +r[fraudCol]===1) hourFraud[h]++;
-      }
-    });
-    const fraudRate = hourBins.map((t,i) => t > 0 ? (hourFraud[i]/t*100) : 0);
-    charts.hour = new Chart(document.getElementById('chartHour'), {
-      type: 'bar',
-      data: {
-        labels: Array.from({length:24},(_,i)=>i+':00'),
-        datasets: [
-          { label: 'Volume', data: hourBins, backgroundColor: 'rgba(0,212,255,0.2)', borderColor: CYAN, borderWidth: 1, yAxisID: 'y' },
-          ...(hasFraudLabel ? [{ label: 'Fraud Rate %', data: fraudRate, type:'line', borderColor: RED, backgroundColor:'transparent', borderWidth:2, pointRadius:2, yAxisID:'y1' }] : [])
-        ]
-      },
-      options: { responsive:true, maintainAspectRatio:false,
-        plugins:{legend:{position:'top'}},
-        scales:{
-          x:{grid:{color:'#1c2235'}}, y:{grid:{color:'#1c2235'}},
-          ...(hasFraudLabel ? {y1:{position:'right',grid:{display:false},ticks:{color:RED}}} : {})
-        }
-      }
-    });
-  } else {
-    document.getElementById('chartHour').parentElement.parentElement.style.display='none';
-  }
-
-  // Chart 3: Score distribution
-  const scoreBins = Array(20).fill(0);
-  const scoreFraud = Array(20).fill(0);
-  data.forEach(r => {
-    const b = Math.min(Math.floor(r._score/5), 19);
-    scoreBins[b]++;
-    if (hasFraudLabel && +r[fraudCol]===1) scoreFraud[b]++;
-  });
-  charts.score = new Chart(document.getElementById('chartScore'), {
-    type: 'bar',
-    data: {
-      labels: Array.from({length:20},(_,i)=>i*5+'-'+(i*5+5)),
-      datasets: [
-        { label: 'All', data: scoreBins, backgroundColor: scoreBins.map((_,i) => i>=13?'rgba(255,59,92,0.5)':i>=9?'rgba(255,176,32,0.4)':'rgba(0,212,255,0.25)'), borderWidth: 0 },
-        ...(hasFraudLabel ? [{ label: 'Confirmed Fraud', data: scoreFraud, backgroundColor:'rgba(255,59,92,0.8)', borderWidth:0 }] : [])
-      ]
-    },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top'}},
-      scales:{ x:{grid:{display:false}, ticks:{maxRotation:45}}, y:{grid:{color:'#1c2235'}} } }
-  });
-
-  // Chart 4: Tier counts
-  charts.tier = new Chart(document.getElementById('chartTier'), {
-    type: 'doughnut',
-    data: {
-      labels: ['LOW','MEDIUM','HIGH','CRITICAL'],
-      datasets:[{ data:[tierCounts.LOW,tierCounts.MEDIUM,tierCounts.HIGH,tierCounts.CRITICAL],
-        backgroundColor:['rgba(0,230,118,0.7)','rgba(0,212,255,0.7)','rgba(255,176,32,0.7)','rgba(255,59,92,0.7)'],
-        borderColor:['#00e676',CYAN,AMBER,RED], borderWidth:1 }]
-    },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
-      plugins:{legend:{position:'right'}} }
-  });
-
-  // Flagged table
-  const topFlagged = [...data].sort((a,b)=>b._score-a._score).slice(0,15);
-  const displayCols = [colMap.id, colMap.amount, colMap.hour, colMap.merchant, colMap.country, fraudCol]
-    .filter(Boolean).slice(0,6);
-
-  document.getElementById('tableHead').innerHTML =
-    ['#', ...displayCols, 'RISK SCORE', 'TIER'].map(c => `<th>${c||''}</th>`).join('');
-
-  document.getElementById('tableBody').innerHTML = topFlagged.map((r, i) => {
-    const tier = r._tier;
-    const pillClass = tier==='CRITICAL'?'risk-critical':tier==='HIGH'?'risk-high':tier==='MEDIUM'?'risk-medium':'risk-low';
-    const cells = displayCols.map(c => {
-      const v = r[c];
-      if (c === fraudCol) return `<td style="color:${+v===1?'var(--red)':'var(--green)'}; font-weight:bold">${+v===1?'⚑ FRAUD':'✓ LEGIT'}</td>`;
-      if (c === colMap.amount) return `<td>$${(+v).toLocaleString('en',{maximumFractionDigits:2})}</td>`;
-      return `<td>${v !== null && v !== undefined ? v : '—'}</td>`;
-    });
-    return `<tr>
-      <td style="color:var(--muted)">${i+1}</td>
-      ${cells.join('')}
-      <td style="color:${tier==='CRITICAL'?'var(--red)':tier==='HIGH'?'var(--amber)':'var(--cyan)'}; font-weight:bold">${r._score.toFixed(0)}</td>
-      <td><span class="risk-pill ${pillClass}">${tier}</span></td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('flagCount').textContent =
-    `${flaggedHigh} transactions flagged (score ≥ 45)`;
-
-  // Show pipeline
-  document.getElementById('pipeline').classList.add('visible');
-
-  // Scroll to results
-  document.getElementById('pipeline').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  // AI Report
-  await generateAIReport(data, colMap, stats, tierCounts, flaggedHigh, hasFraudLabel, totalFraud, filename, amounts);
-}
-
-async function generateAIReport(data, colMap, stats, tierCounts, flaggedHigh, hasFraudLabel, totalFraud, filename, amounts) {
-  const avgAmt = amounts.length ? (amounts.reduce((a,b)=>a+b,0)/amounts.length) : 0;
-  const maxAmt = amounts.length ? Math.max(...amounts) : 0;
-
-  // Find dominant hour pattern for fraud
-  let lateNightPct = 0;
-  if (colMap.hour) {
-    const lateNight = data.filter(r => { const h = +r[colMap.hour]%24; return h<=5||h>=23; });
-    lateNightPct = (lateNight.length / data.length * 100).toFixed(1);
-  }
-
-  const topFlagged = [...data].sort((a,b)=>b._score-a._score).slice(0,5);
-  const topAmounts = topFlagged.map(r => colMap.amount ? +r[colMap.amount] : 0);
-
-  const prompt = `You are a senior fraud analyst writing an investigation report. Analyze this transaction dataset and write a concise, professional report.
-
-Dataset: ${filename}
-Total transactions: ${data.length.toLocaleString()}
-Average transaction amount: $${avgAmt.toFixed(2)}
-Maximum transaction amount: $${maxAmt.toFixed(2)}
-Transactions flagged HIGH or CRITICAL risk: ${flaggedHigh} (${(flaggedHigh/data.length*100).toFixed(1)}%)
-Risk tier breakdown: CRITICAL=${tierCounts.CRITICAL}, HIGH=${tierCounts.HIGH}, MEDIUM=${tierCounts.MEDIUM}, LOW=${tierCounts.LOW}
-Late-night transactions (00:00-05:00): ${lateNightPct}%
-${hasFraudLabel ? `Confirmed fraud labels present: ${totalFraud} (${(totalFraud/data.length*100).toFixed(2)}%)` : 'No fraud labels in dataset — unsupervised detection only'}
-Top 5 flagged transaction amounts: ${topAmounts.map(a=>'$'+a.toFixed(2)).join(', ')}
-Columns detected: ${Object.entries(colMap).filter(([,v])=>v).map(([k,v])=>`${k}=${v}`).join(', ')}
-
-Write a fraud investigation report with exactly these 4 sections using markdown headers (####):
-#### Executive Summary
-#### Key Risk Findings
-#### Pattern Analysis
-#### Recommended Actions
-
-Be specific, reference the actual numbers above. Write like a real fraud analyst, not a generic AI. 2-3 sentences per section maximum. Do not use bullet points.`;
-
-  const reportEl = document.getElementById('aiReport');
-  const badgeEl = document.getElementById('genBadge');
-  reportEl.innerHTML = '<span class="cursor"></span>';
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const d = await res.json();
-    const text = d.content.map(i=>i.text||'').join('');
-
-    // Stream render
-    reportEl.innerHTML = '';
-    const cursor = document.createElement('span');
-    cursor.className = 'cursor';
-
-    // Convert markdown headers and render progressively
-    const formatted = text
-      .replace(/#### (.+)/g, '<h4>$1</h4>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n\n/g, '<br><br>')
-      .replace(/\n/g, ' ');
-
-    let i = 0;
-    const interval = setInterval(() => {
-      if (i >= formatted.length) {
-        clearInterval(interval);
-        cursor.remove();
-        badgeEl.textContent = 'COMPLETE';
-        badgeEl.style.background = 'var(--green-dim)';
-        badgeEl.style.color = 'var(--green)';
-        badgeEl.style.borderColor = 'rgba(0,230,118,0.3)';
-        return;
-      }
-      // Add chunks for speed
-      const chunk = formatted.slice(i, i+4);
-      reportEl.innerHTML = formatted.slice(0, i+4);
-      reportEl.appendChild(cursor);
-      i += 4;
-    }, 18);
-
-  } catch(e) {
-    reportEl.innerHTML = `<span style="color:var(--red);font-family:var(--mono);font-size:12px">Error generating report: ${e.message}</span>`;
-    badgeEl.textContent = 'ERROR';
-  }
-}
-
-function destroyCharts() {
-  Object.values(charts).forEach(c => c.destroy());
-  charts = {};
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-</script>
-</body>
-</html>
+      <div class="signal

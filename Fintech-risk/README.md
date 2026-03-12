@@ -3,8 +3,8 @@
 **Dan Fang** · Risk Intelligence · M.Sc. Machine Learning, Reichman University  
 danfly8888@gmail.com · Ramat Gan, Israel
 
-**[Live Dashboard →](https://your-username.github.io/fraud-risk-portfolio/fintech-risk/fraud-analytics-dashboard.html)**  
-**[Jupyter Notebook →](./risk_analytics_v2.ipynb)**
+**[Live Dashboard →](https://your-username.github.io/fraud-risk-portfolio/fintech-risk/risk-analytics-dashboard.html)**  
+**[Jupyter Notebook →](./risk_analytics.ipynb)**
 
 ---
 

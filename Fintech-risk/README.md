@@ -143,7 +143,6 @@ Module 5 demonstrates that fraud spikes are predictable — seasonal patterns, n
 
 ## About
 
-**Dan Fang** | danfly8888@gmail.com | Ramat Gan, Israel  
-Risk Intelligence Analyst (2016–2019) · M.Sc. Machine Learning, Reichman University (2025)
-
+**Dan Fang** | danfly8888@gmail.com
+Risk Intelligence · M.Sc. Machine Learning
 [← Back to Portfolio](../README.md)

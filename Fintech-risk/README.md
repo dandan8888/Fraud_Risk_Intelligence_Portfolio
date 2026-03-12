@@ -1,148 +1,169 @@
-# Fintech Risk Analytics
+# Fintech Risk Analytics — SQL + Five-Domain Detection Pipeline
 
-> Five-domain fraud detection pipeline covering transaction fraud, merchant risk, AML, credit application fraud, and chargeback & payout abuse.
+**Dan Fang** · Risk Intelligence · M.Sc. Machine Learning, Reichman University  
+danfly8888@gmail.com · Ramat Gan, Israel
 
 **[Live Dashboard →](https://your-username.github.io/fraud-risk-portfolio/fintech-risk/fraud-analytics-dashboard.html)**  
-**[Jupyter Notebook →](./risk_analytics.ipynb)**
+**[Jupyter Notebook →](./risk_analytics_v2.ipynb)**
 
 ---
 
-## Overview
+## What this project demonstrates
 
-This project demonstrates the quantitative side of fraud and risk analysis — the counterpart to the [Scam Defense Copilot](../scam-defense/)'s qualitative reasoning.
+This portfolio answers the questions hiring managers actually ask when screening a Data Analyst or Risk Analyst:
 
-Where the Copilot asks *"what psychological tactics is this scammer using?"*, this project asks *"across 10,000 transactions, which ones are statistically anomalous, and what does the portfolio-level risk look like?"*
+> *"Can they write SQL?"* → Module 0: five business-driven SQL queries with DuckDB  
+> *"Can they turn data into a business recommendation?"* → Every module ends with a plain-English recommendation, not just a chart  
+> *"Do they understand the domain?"* → 3 years operational fraud experience shapes every feature and threshold  
+> *"Can they build a dashboard a non-technical stakeholder can use?"* → Interactive HTML dashboard, no setup required
 
-Both questions matter in a mature fraud operation.
+**Who this is relevant for:** Fintech, payments, banking, e-commerce, SaaS — any team that needs an analyst who combines data skills with business judgment.
+
+---
+
+## Skills at a Glance
+
+| Category | What's demonstrated |
+|---|---|
+| **SQL** | JOINs, GROUP BY, HAVING, CASE WHEN, window aggregations, subqueries (DuckDB) |
+| **Data Analysis** | EDA, feature engineering, cohort-style segmentation, dollar-weighted metrics |
+| **Machine Learning** | Isolation Forest, KMeans, Logistic Regression, ROC/PR analysis |
+| **Dashboards** | Interactive HTML dashboard (Chart.js), matplotlib/seaborn multi-panel layouts |
+| **Business Thinking** | Every module ends with a specific, actionable recommendation |
+| **Domain Knowledge** | Visa/Mastercard thresholds, BSA/FATF typologies, FCRA/ECOA compliance |
 
 ---
 
 ## Part 1 — Interactive Analytics Dashboard
 
-Upload any transaction CSV and get instant analysis. The dashboard auto-detects your column schema and works with any dataset format.
+Upload any transaction CSV and get instant analysis. The dashboard auto-detects your column schema.
 
-**Supported dataset formats:**
-- Kaggle Credit Card Fraud dataset
-- PaySim Mobile Payments dataset  
-- IEEE-CIS Fraud Detection dataset
-- Any CSV with transaction amounts, timestamps, and optional fraud labels
+**Supported formats:** Kaggle Credit Card Fraud · PaySim Mobile Payments · IEEE-CIS · any CSV with transaction amounts and optional fraud labels
 
 **What it produces:**
 - Portfolio-level KPIs (total volume, fraud rate, flagged transactions)
-- Amount distribution chart (log scale, fraud vs legitimate overlay)
+- Amount distribution (log scale, fraud vs legitimate overlay)
 - 24-hour transaction pattern with fraud rate by hour
-- Risk score distribution across the full portfolio
 - Risk tier breakdown (LOW / MEDIUM / HIGH / CRITICAL)
 - Top 15 highest-risk transactions with per-row explanation
-- AI-generated investigation report (Executive Summary, Key Findings, Pattern Analysis, Recommended Actions)
-
-**Scoring methodology:** Rule-based signals (amount vs median, late-night flag, high-risk merchant category, geographic anomaly) combined with behavioral features specific to each dataset type.
+- AI-generated investigation report (Executive Summary, Key Findings, Recommended Actions)
 
 ---
 
-## Part 2 — Jupyter Notebook: Five-Domain Pipeline
+## Part 2 — Jupyter Notebook: SQL + Five-Domain Pipeline
 
-Full analytical pipeline with code, visualizations, and business commentary across five fraud domains.
+### Module 0 — SQL Exploratory Analysis *(added to demonstrate DA skills)*
 
-### Module 1 — Transaction Fraud (Credit Card / Payment)
+Before reaching for Python, a data analyst reaches for SQL. This module runs five analytical queries directly on the datasets using DuckDB — the same questions a DA would ask on day one of an investigation.
 
-**Business focus:** Managing the false positive rate alongside detection rate. Every legitimate transaction wrongly blocked has a cost in revenue and customer trust — not just the fraud that gets through.
+**Business questions answered:**
+
+| Query | Question | Key technique |
+|---|---|---|
+| Q1 | Which merchant categories generate the most fraud *value* — not just count? | GROUP BY, CASE WHEN, NULLIF |
+| Q2 | Which hours of day need tighter real-time controls? | Aggregation, percentile threshold |
+| Q3 | Which customer segment has the highest dollar exposure? | Dollar-weighted metrics vs count-based |
+| Q4 | Is HIGH/CRITICAL risk concentrated in specific merchant types? | Multi-condition HAVING, portfolio view |
+| Q5 | Which accounts show velocity fraud signatures detectable with SQL alone? | HAVING, fraud rate filter, DISTINCT count |
+
+Each query ends with a plain-English business recommendation.
+
+---
+
+### Module 1 — Transaction Fraud Detection
+
+**Business question:** Which transactions should we block — and at what cost in legitimate volume?
+
+The core trade-off in fraud detection is not accuracy. It is false positives. A rule that blocks 95% of fraud but also blocks 5% of legitimate customers costs more in lost revenue than the fraud it prevents. This module quantifies that trade-off explicitly.
 
 Key outputs:
-- Ensemble model (rule engine + Isolation Forest) with ROC-AUC ~0.87
-- Threshold tradeoff analysis — FDR vs FPR across decision thresholds
-- Dollar-weighted outcome matrix — what fraud value was blocked vs missed, and at what cost in legitimate volume
+- Ensemble model (rule engine + Isolation Forest), ROC-AUC ~0.87
+- Threshold tradeoff analysis — Fraud Detection Rate vs False Positive Rate across decision thresholds
+- Dollar-weighted outcome matrix — fraud value blocked vs missed, cost in legitimate volume
+
+---
 
 ### Module 2 — Merchant Risk Scoring
 
-**Business focus:** Portfolio-level risk management for payment facilitators and merchant acquirers.
+**Business question:** Which merchants in our portfolio are putting us at risk of card network fines?
 
-Signals used: chargeback ratio (Visa/Mastercard threshold: 1%), refund velocity, shared bank account infrastructure, transaction volume spikes, geographic spread.
+Signals: chargeback ratio (Visa/Mastercard threshold: 1%), refund velocity, shared bank account infrastructure, transaction volume spikes, geographic spread.
 
 Key outputs:
-- Risk scoring model with tier classification (LOW / MEDIUM / HIGH / CRITICAL)
-- KMeans clustering of merchant behavioral profiles
-- Portfolio volume at risk from CRITICAL-tier merchants
-- Shared infrastructure analysis — merchants sharing bank accounts show 3× higher fraud rates
+- Composite risk scoring with tier classification (LOW / MEDIUM / HIGH / CRITICAL)
+- KMeans clustering of merchant behavioral profiles — 6 business types, 500 merchants
+- Portfolio volume at risk from HIGH/CRITICAL-tier merchants
+- Shared infrastructure finding: merchants sharing bank accounts show 3× higher fraud rates
+
+---
 
 ### Module 3 — AML Network Analysis
 
-**Business focus:** SAR (Suspicious Activity Report) prioritization. Generating too many SARs wastes investigator resources; too few creates regulatory exposure.
+**Business question:** Which accounts should we file a SAR on — and how do we prioritise when investigator capacity is limited?
 
-Typologies detected:
-- **Structuring:** Transaction amounts clustering just below $10,000 CTR threshold
-- **Layering:** High pass-through ratio — funds in ≈ funds out, accounts acting as conduits
-- **Shell account patterns:** Low transaction count, high value, rapid turnover
+Too many SARs waste investigator time. Too few creates regulatory exposure. This module builds a prioritisation score grounded in BSA/FATF typologies.
+
+Typologies detected: structuring below the $10k CTR threshold · layering (high pass-through ratio) · shell account patterns
 
 Key outputs:
-- Account-level AML risk score
+- Account-level AML risk score with SAR trigger logic
 - Pass-through ratio analysis
-- SAR trigger logic with precision/recall tradeoff
+- Precision/recall tradeoff for SAR prioritisation
+
+---
 
 ### Module 4 — Credit Application Fraud
 
-**Business focus:** Explainability is a regulatory requirement. Under FCRA and ECOA, adverse action notices must cite specific, understandable reasons — a black-box model cannot comply.
+**Business question:** Which loan applications are fraudulent — and can we explain *why* in terms a compliance officer can sign off on?
 
-Logistic regression scorecard (intentionally simpler than gradient boosting) with interpretable coefficients:
-- Identity velocity (same identity in multiple recent applications)
-- Debt-to-income ratio
-- Email domain risk (disposable addresses)
-- Application form timing (bot-speed vs human-speed)
-- Address tenure
+Under FCRA and ECOA, adverse action notices must cite specific, understandable reasons. A black-box model cannot comply. Logistic regression is the right tool here — not gradient boosting.
 
-### Module 5 — Chargeback & Payout Fraud (Live Streaming / Digital Payments)
+Key outputs:
+- Interpretable scorecard with feature coefficients (identity velocity, DTI ratio, email domain risk, form timing, address tenure)
+- Adverse action analysis
+- ROC-AUC ~0.83 with full explainability
 
-**Business focus:** Keeping platform chargeback rates below the Visa (0.9%) and Mastercard (1.0%) thresholds that trigger card network fines and remediation programmes. Equally, detecting payout abuse — fraudulent creators extracting funds through fabricated engagement.
+---
 
-Typologies detected:
-- **Friendly fraud:** Real purchases disputed after goods are consumed
-- **Chargeback fraud:** Coordinated dispute abuse to extract value
-- **Bonus abuse:** Exploiting promotional credits and referral schemes
-- **Payout fraud:** New accounts fabricating creator revenue to trigger withdrawals
+### Module 5 — Chargeback & Payout Fraud
+
+**Business question:** Are we at risk of breaching Visa/Mastercard chargeback thresholds — and where do we intervene first?
 
 Key outputs:
 - Chargeback rate by country, user segment, account age, and transaction amount
-- Seasonal trend analysis — August (promotion abuse) and December (holiday fraud) spike identification
+- Seasonal trend analysis — August (promotion abuse) and December (holiday fraud) spikes
+- Account age gate finding: accounts under 30 days show 3–5× the chargeback rate of established users
 - High-risk user scoring with automated investigation report
-- Account age gate analysis — accounts under 30 days show 3–5× the chargeback rate of established users
 
 ---
 
 ## Design Principles
 
-**Domain knowledge drives feature engineering.**  
-The $10k structuring threshold, the 1% Visa/Mastercard chargeback limit, and the SAR pass-through ratio come from regulatory knowledge — not from data. Features grounded in operational expertise consistently outperform generic feature selection.
+**SQL before models.** Analytical questions deserve SQL answers first. Module 0 demonstrates that a significant share of actionable fraud intelligence can be extracted with queries alone — before any ML is needed.
 
-**False positives have a real cost.**  
-Every module includes false positive rate analysis alongside detection rate. Risk analysis means thinking in dollar-weighted terms, not just counts.
+**Business recommendations, not just charts.** Every module ends with a specific recommendation framed in terms a product manager or compliance officer can act on.
 
-**Explainability is not optional.**  
-The logistic regression scorecard in Module 4 is simpler than a gradient boosting model by design. Regulatory compliance requires it.
+**Dollar-weighted thinking.** Fraud rate (%) is a weak metric. Dollar value at risk is what the business cares about. Every module uses dollar-weighted metrics as the primary lens.
 
-**Unsupervised methods are operationally essential.**  
-Fraud labels are scarce, delayed, and never complete. Both Isolation Forest and the AML network features operate without labels — making them deployable on day one.
+**Domain knowledge drives feature engineering.** The $10k structuring threshold, the 1% chargeback limit, and the SAR pass-through ratio come from operational experience — not from data. Features grounded in domain knowledge consistently outperform generic feature selection.
 
-**Proactive beats reactive.**  
-Module 5 demonstrates that fraud spikes are predictable — seasonal patterns, new account windows, and high-risk geographies are known in advance. Tightening controls ahead of these windows, rather than in response to them, is the mark of a mature risk programme.
+**Explainability is not optional.** Module 4 uses logistic regression by design. Regulatory compliance requires it.
 
 ---
 
-## Model Performance Summary
+## Results Summary
 
-| Module | Domain | Method | ROC-AUC |
-|--------|--------|--------|---------|
-| 1. Transaction Fraud | Credit card / CNP | Rule Engine + Isolation Forest | ~0.87 |
-| 2. Merchant Risk | Portfolio monitoring | Composite Score + KMeans | ~0.84 |
-| 3. AML Detection | Compliance | Network Features + Rules | ~0.82 |
-| 4. Credit Fraud | Loan origination | Logistic Regression Scorecard | ~0.83 |
-| 5. Chargeback & Payout | Digital payments | Segmentation + Threshold Rules | ~0.81 |
+| Module | Domain | SQL / Method | AUC | Business Metric |
+|---|---|---|---|---|
+| 0. SQL Analysis | Cross-domain | DuckDB SQL | — | 5 business recommendations |
+| 1. Transaction Fraud | Card / CNP | Rule Engine + Isolation Forest | ~0.87 | FDR vs FPR threshold curve |
+| 2. Merchant Risk | Portfolio | Composite Score + KMeans | ~0.84 | % portfolio volume at risk |
+| 3. AML Detection | Compliance | Network Features + Rules | ~0.82 | SAR precision/recall |
+| 4. Credit Fraud | Loan origination | Logistic Regression Scorecard | ~0.83 | Adverse action explainability |
+| 5. Chargeback & Payout | Digital payments | Segmentation + Rules | ~0.81 | Chargeback rate vs network threshold |
 
-> All results on synthetic data designed to reflect realistic fraud-to-legitimate ratios and behavioral distributions from published industry benchmarks (Nilson Report, FinCEN SAR statistics, Visa/Mastercard dispute data).
+> All results on synthetic data modelled on published industry benchmarks: Nilson Report fraud rates, FinCEN SAR statistics, Visa/Mastercard dispute thresholds.
 
 ---
 
-## About
-
-**Dan Fang** | danfly8888@gmail.com
-Risk Intelligence · M.Sc. Machine Learning
 [← Back to Portfolio](../README.md)

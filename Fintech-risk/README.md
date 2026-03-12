@@ -153,7 +153,7 @@ Key outputs:
 
 ---
 
-## Professional Profile
+## Background
 
 Risk Data Analyst specializing in the intersection of fraud intelligence and scalable data solutions. With experience investigating financial crime, I bridge the gap between deep domain expertise and modern analytics. This portfolio demonstrates my ability to transform complex transactional data into actionable risk strategies using SQL, Python, and Machine Learning.
 
